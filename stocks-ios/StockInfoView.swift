@@ -13,7 +13,7 @@ import UIKit
 struct StockInfoView: View {
     @Environment(\.presentationMode) var presentationMode
     
-    @State var ticker: String
+  
    
     @State var selectedChart: ChartType = .hourly
     @State var isAddedtoFav = false
@@ -68,9 +68,9 @@ struct StockInfoView: View {
                     CompanyInfoView()
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
-                    InsiderSentimentsView()
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
+//                    InsiderSentimentsView()
+//                        .listRowSeparator(.hidden)
+//                        .listRowBackground(Color.clear)
                     
                     
                     
@@ -82,7 +82,7 @@ struct StockInfoView: View {
             }
             
             
-            .navigationBarTitle(ticker)
+            .navigationBarTitle("AAPL")
             .toolbar {
                 // Plus button which might perform some action
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -191,11 +191,13 @@ struct ChartLabel: View {
 }
 
 var HourlyChart: some View {
+    
     // Replace with your actual chart view
     Text("Hourly Chart Placeholder")
 }
 
 var HistoricalChart: some View {
+    
     // Replace with your actual chart view
     Text("Historical Chart Placeholder")
 }
@@ -468,6 +470,6 @@ struct SentimentRow: View {
 
 
 #Preview {
-    StockInfoView(ticker:String())
+    StockInfoView()
 
 }

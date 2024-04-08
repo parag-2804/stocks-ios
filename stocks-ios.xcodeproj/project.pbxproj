@@ -17,6 +17,7 @@
 		2B8CB58F2BBE452700A807A0 /* Launch Screen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 2B8CB58E2BBE452700A807A0 /* Launch Screen.storyboard */; };
 		2B8CB5922BBF601300A807A0 /* StockInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B8CB5912BBF601300A807A0 /* StockInfoView.swift */; };
 		2B8CB5942BBFA74300A807A0 /* Utility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B8CB5932BBFA74200A807A0 /* Utility.swift */; };
+		2B8CB5962BC16FB000A807A0 /* Webservice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B8CB5952BC16FB000A807A0 /* Webservice.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -51,6 +52,7 @@
 		2B8CB5902BBF0D5E00A807A0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		2B8CB5912BBF601300A807A0 /* StockInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StockInfoView.swift; sourceTree = "<group>"; };
 		2B8CB5932BBFA74200A807A0 /* Utility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utility.swift; sourceTree = "<group>"; };
+		2B8CB5952BC16FB000A807A0 /* Webservice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Webservice.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -102,6 +104,7 @@
 			isa = PBXGroup;
 			children = (
 				2B8CB5902BBF0D5E00A807A0 /* Info.plist */,
+				2B8CB5952BC16FB000A807A0 /* Webservice.swift */,
 				2B8CB5932BBFA74200A807A0 /* Utility.swift */,
 				2B8CB5642BBE44D900A807A0 /* stocks_iosApp.swift */,
 				2B8CB5662BBE44D900A807A0 /* ContentView.swift */,
@@ -272,6 +275,7 @@
 				2B8CB5942BBFA74300A807A0 /* Utility.swift in Sources */,
 				2B8CB5922BBF601300A807A0 /* StockInfoView.swift in Sources */,
 				2B8CB5672BBE44D900A807A0 /* ContentView.swift in Sources */,
+				2B8CB5962BC16FB000A807A0 /* Webservice.swift in Sources */,
 				2B8CB5652BBE44D900A807A0 /* stocks_iosApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
