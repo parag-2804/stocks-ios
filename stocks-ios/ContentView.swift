@@ -9,97 +9,7 @@ import SwiftUI
 import UIKit
 
 //
-//
-//
 
-//
-//struct ContentView: View {
-//    @State private var isEditMode = false
-//    @State var query : String = ""
-//    @StateObject var webService = WebService()
-//    let searchController = UISearchController()
-//    
-//    var body: some View {
-//        
-//        NavigationStack {
-//            ZStack(alignment: .top) {
-//                Color.gray.opacity(0.3)
-//                    .edgesIgnoringSafeArea(.all)
-//                
-//                List {
-//                    // Date View
-//                    headerView()
-//                        .listRowSeparator(.hidden)
-//                        .listRowBackground(Color.clear)
-//                    // Portfolio Section
-//                    portfolioHomeView()
-//                        .listRowSeparator(.hidden)
-//                        .listRowBackground(Color.clear)
-//                    
-//                    //Favourites Section
-//                    favView()
-//                        .listRowSeparator(.hidden)
-//                        .listRowBackground(Color.clear)
-//                    
-//                    NavigationLink (destination: StockInfoView()){
-//                        Text("Show AAPL")
-//                    }
-//                    
-//                    // Footer View
-//                    footerView()
-//                        .listRowSeparator(.hidden)
-//                        .listRowBackground(Color.clear)
-//                    
-//                    
-//                }
-//                
-//                .navigationBarItems(trailing:
-//                                        Button(action: {
-//                    isEditMode.toggle()
-//                }) {
-//                    Text(isEditMode ? "Done" : "Edit")
-//                }
-//                )
-//                
-//            }
-//            .navigationBarTitle("Stocks")
-//            
-//            .searchable(text: $query, prompt: "Search")
-//            .onChange(of: query) { newValue, _ in
-//                webService.fetchAutocompleteResults(query: newValue)
-//            }
-//            
-//            // Assuming you want to display the suggestions below the search bar or in another appropriate place in your UI
-//            if !query.isEmpty
-//            {
-//                suggestionsListView
-//            }
-//        }
-//        
-//        
-//        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: .top)
-//    }
-//
-//
-//
-//private var suggestionsListView: some View {
-//        List(webService.autocompleteSuggestions) { suggestion in
-//            VStack(alignment: .leading) {
-//                Text(suggestion.displaySymbol)
-//                    .fontWeight(.bold)
-//                Text(suggestion.description)
-//                    .font(.subheadline)
-//                    .foregroundColor(.gray)
-//            }
-//            .onTapGesture {
-//                //self.query = suggestion.displaySymbol
-//                // Perform any additional actions when a suggestion is tapped
-//            }
-//        }
-//        .listStyle(PlainListStyle())
-//    }
-//
-//}
 
 class SharedData: ObservableObject {
     static let shared = SharedData() // Shared instance
@@ -107,16 +17,19 @@ class SharedData: ObservableObject {
 }
 
 
+
+
 struct ContentView: View {
     @State private var isEditMode = false
     @State private var query: String = ""
     @StateObject var webService = WebService()
     
+    // State to manage the selected suggestion
+    @State private var isselected: Bool = false
     
     var body: some View {
         NavigationStack {
             List {
-                // Conditionally show the content or search results
                 if query.isEmpty {
                     // Regular content
                     headerView()
@@ -141,10 +54,10 @@ struct ContentView: View {
                             Text(suggestion.displaySymbol).fontWeight(.bold)
                             Text(suggestion.description).foregroundColor(.gray)
                         }
+                        .contentShape(Rectangle())
                         .onTapGesture {
+                            isselected = true
                             SharedData.shared.ticker = suggestion.displaySymbol
-                            
-                            
                         }
                     }
                 }
@@ -153,12 +66,15 @@ struct ContentView: View {
             .navigationBarTitle("Stocks")
             .navigationBarItems(trailing: editButton)
             .searchable(text: $query, prompt: "Search")
-            .onChange(of: query) { newValue, _ in
-                webService.fetchAutocompleteResults(query: newValue)
+            .onChange(of: query) { _ in
+                webService.fetchAutocompleteResults(query: query)
             }
+            NavigationLink(destination: StockInfoView(), isActive: $isselected) {
+                EmptyView()
+            }
+            .hidden()
         }
     }
-    
     private var editButton: some View {
         Button(action: {
             isEditMode.toggle()
@@ -166,9 +82,9 @@ struct ContentView: View {
             Text(isEditMode ? "Done" : "Edit")
         }
     }
-    
-    // Other views like headerView, portfolioHomeView, favView, footerView, and StockInfoView remain the same.
 }
+
+    
     
     
     // View for the header with the date
@@ -181,9 +97,6 @@ struct ContentView: View {
                 Rectangle()
                     .fill(Color.white)
                     .cornerRadius(8)
-                
-                
-                
                 Text(Utility.formatDate(currentDate))
                     .font(.title)
                     .fontWeight(.bold)
@@ -257,7 +170,7 @@ struct ContentView: View {
         
         var body: some View{
             
-        
+            
             VStack(alignment: .leading){
                 Text("Favourites")
                     .font(.subheadline)
@@ -272,32 +185,32 @@ struct ContentView: View {
         
     }
     // View for the footer with the Finnhub.io link
-struct footerView: View {
-    var body: some View{
-        
-        
-        ZStack {
-            Rectangle()
-                .fill(Color.white)
-                .cornerRadius(8)
+    struct footerView: View {
+        var body: some View{
             
             
-            Link("Powered by Finnhub.io", destination: URL(string: "https://www.finnhub.io")!)
-                .font(.footnote)
-                .foregroundColor(.gray)
+            ZStack {
+                Rectangle()
+                    .fill(Color.white)
+                    .cornerRadius(8)
+                
+                
+                Link("Powered by Finnhub.io", destination: URL(string: "https://www.finnhub.io")!)
+                    .font(.footnote)
+                    .foregroundColor(.gray)
+            }
+            .frame(height: 40)
+            .padding(.horizontal, -20.0)
         }
-        .frame(height: 40)
-        .padding(.horizontal, -20.0)
     }
-}
-
-
-// Preview
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        
-        ContentView()
-       
+    
+    
+    // Preview
+    struct ContentView_Previews: PreviewProvider {
+        static var previews: some View {
+            
+            ContentView()
+            
+        }
     }
-}
-
+    

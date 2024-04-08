@@ -82,7 +82,7 @@ struct StockInfoView: View {
             }
             
             
-            .navigationBarTitle("AAPL")
+            .navigationBarTitle(SharedData.shared.ticker)
             .toolbar {
                 // Plus button which might perform some action
                 ToolbarItem(placement: .navigationBarTrailing) {

@@ -50,11 +50,7 @@ class WebService: ObservableObject {
     // Add similar methods for other endpoints...
     
     
-    // Example method for autocomplete
-    //    func getDataAutoComplete(queryVal: String, completion: @escaping (Result<[AutocompleteResult], Error>) -> Void) {
-    //        let url = baseUrl.appendingPathComponent("autocomplete/\(queryVal)")
-    //        fetchData(url: url, completion: completion)
-    //    }
+ 
 //    func fetchAutocompleteResults(query: String) {
 //        let url = baseUrl.appendingPathComponent("autocomplete/\(query)")
 //        fetchData(url: url) { [weak self] (result: Result<AutocompleteResponse, Error>) in
@@ -79,48 +75,6 @@ class WebService: ObservableObject {
 //
     
     
-    
-//    func fetchAutocompleteResults(query: String) {
-//            // Cancel the current debounce work item if it exists
-//            debounceWorkItem?.cancel()
-//            
-//            // Create a new work item to handle the API request
-//            debounceWorkItem = DispatchWorkItem { [weak self] in
-//                var urlComponents = URLComponents(url: self?.baseUrl.appendingPathComponent("autocomplete") ?? URL(fileURLWithPath: ""), resolvingAgainstBaseURL: true)
-//                urlComponents?.queryItems = [URLQueryItem(name: "query", value: query)]
-//                
-//                guard let url = urlComponents?.url else { return }
-//                
-//                URLSession.shared.dataTask(with: url) { data, response, error in
-//                    DispatchQueue.main.async {
-//                        guard let data = data, error == nil else {
-//                            print("Network error: \(error?.localizedDescription ?? "Unknown error")")
-//                            self?.autocompleteSuggestions = []
-//                            return
-//                        }
-//                        
-//                        do {
-//                            let results = try JSONDecoder().decode(AutocompleteResponse.self, from: data)
-//                            print(results)
-//                            let filteredResults = results.result.filter {
-//                                ($0.type ?? "") == "Common Stock" && !($0.symbol).contains(".")
-//                            }
-//                            self?.autocompleteSuggestions = filteredResults.map {
-//                                FilteredAutoResult(description: $0.description, displaySymbol: $0.displaySymbol)
-//                            }
-//                        } catch {
-//                            print("Decoding error: \(error.localizedDescription)")
-//                            self?.autocompleteSuggestions = []
-//                        }
-//                    }
-//                }.resume()
-//            }
-//            
-//            // Schedule the debounce work item to execute after a 0.5-second delay
-//            if let debounceWorkItem = debounceWorkItem {
-//                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: debounceWorkItem)
-//            }
-//        }
     
     func fetchAutocompleteResults(query: String) {
             print(query)
@@ -176,7 +130,7 @@ class WebService: ObservableObject {
         }
     }
     
-    struct FilteredAutoResult:Identifiable{
+    struct FilteredAutoResult:Identifiable,Hashable{
         let id: UUID = UUID()
         let description: String
         let displaySymbol: String
