@@ -12,7 +12,7 @@ import UIKit
 
 struct StockInfoView: View {
     @Environment(\.presentationMode) var presentationMode
-    
+    @EnvironmentObject var webService: WebService
   
    
     @State var selectedChart: ChartType = .hourly
@@ -108,13 +108,13 @@ struct stockheadView: View{
     @State var currentVal = 171.09
     @State var changeVal = -7.58
     @State var changeper = -4.0
-    
+    @EnvironmentObject var webService: WebService
     var body: some View{
         
         
         VStack(alignment: .leading, spacing: 15){
             
-            Text("AAPL Inc")
+            Text(webService.descData?.name ?? "Loading")
                 .font(.subheadline)
                 .foregroundColor(Color.gray)
             
@@ -323,21 +323,24 @@ struct StockStatsView: View {
     }
 }
 
-struct CompanyInfo {
-    var ipoStartDate: String
-    var industry: String
-    var webpage: URL
-    var companyPeers: [String]
-}
+//struct CompanyInfo {
+//    var ipoStartDate: String
+//    var industry: String
+//    var webpage: URL
+//    var companyPeers: [String]
+//}
 
 struct CompanyInfoView: View {
-    let companyInfo = CompanyInfo(
-        ipoStartDate: "1980-12-12",
-        industry: "Technology",
-        webpage: URL(string: "https://www.apple.com/")!,
-        companyPeers: ["AAPL", "DELL", "SMCI", "HPQ", "HPE"]
-    )
-
+    @EnvironmentObject var webService: WebService
+    @State private var selectedPeer: String? = nil
+    //    let companyInfo = CompanyInfo(
+    //        ipoStartDate: webService.descData?.ipo ?? "",
+    //        industry: "Technology",
+    //        webpage: URL(string: "https://www.apple.com/")!,
+    //        companyPeers: ["AAPL", "DELL", "SMCI", "HPQ", "HPE"]
+    //    )
+//    let companyPeers = ["AAPL", "DELL", "SMCI", "HPQ", "HPE"]
+    
     var body: some View {
         VStack(alignment: .leading,spacing: 15) {
             Text("About")
@@ -349,38 +352,54 @@ struct CompanyInfoView: View {
                 HStack {
                     Text("IPO Start Date:")
                     Spacer()
-                    Text(companyInfo.ipoStartDate)
+                    Text(webService.descData?.ipo ?? "Loading")
                 }
                 
                 HStack {
                     Text("Industry:")
                     Spacer()
-                    Text(companyInfo.industry)
+                    Text(webService.descData?.finnhubIndustry ?? "Loading")
                 }
                 
                 HStack {
                     Text("Webpage:")
                     Spacer()
-                    Link("Apple", destination: companyInfo.webpage)
+                    if let urlString = webService.descData?.weburl, let url = URL(string: urlString) {
+                        Link(webService.descData?.weburl ?? "Website", destination: url)
+                    } else {
+                        // Handle case where URL is not valid or missing
+                        Text("Loading")
+                    }
                 }
                 
                 HStack {
                     Text("Company Peers:")
                     Spacer()
-                    ForEach(companyInfo.companyPeers, id: \.self) { peer in
-                        Text(peer)
-                            .padding(.trailing, 4)
+                    Spacer()
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 10) {
+                            ForEach(webService.peers, id: \.self) { peer in
+                                Text(peer)
+                                    .foregroundColor(.blue) // Set the text color to blue for a link-like appearance
+                                    .onTapGesture {
+                                    SharedData.shared.ticker = peer // Update the shared ticker
+                                    webService.fetchAPI()
+                                    self.selectedPeer = peer // Trigger navigation
+                                }
+                                
+                                // Invisible NavigationLink for navigation
+                                .background(NavigationLink("", destination: StockInfoView(), isActive: .constant(peer == selectedPeer ?? "Loading")).hidden())
+                            }
+                        }
                     }
+                    
+                    
                 }
             }
-        }
-        .padding(.horizontal, -20.0)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        
+        }.padding(.horizontal, -20.0)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
-
-
     
 struct SentimentValues {
     var positive: Double
@@ -465,11 +484,13 @@ struct SentimentRow: View {
 
 #Preview{
     InsiderSentimentsView()
+        .environmentObject(WebService.service)
         
 }
 
 
 #Preview {
     StockInfoView()
+        .environmentObject(WebService.service)
 
 }

@@ -22,7 +22,8 @@ class SharedData: ObservableObject {
 struct ContentView: View {
     @State private var isEditMode = false
     @State private var query: String = ""
-    @StateObject var webService = WebService()
+//    @StateObject var webService = WebService()
+    @EnvironmentObject var webService: WebService
     
     // State to manage the selected suggestion
     @State private var isselected: Bool = false
@@ -41,9 +42,9 @@ struct ContentView: View {
                     favView()
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
-                    NavigationLink(destination: StockInfoView()) {
-                        Text("Show AAPL")
-                    }
+//                    NavigationLink(destination: StockInfoView()) {
+//                        Text("Show AAPL")
+//                    }
                     footerView()
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
@@ -56,8 +57,10 @@ struct ContentView: View {
                         }
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            isselected = true
+                            
                             SharedData.shared.ticker = suggestion.displaySymbol
+                            webService.fetchAPI()
+                            isselected = true
                         }
                     }
                 }
@@ -73,6 +76,7 @@ struct ContentView: View {
                 EmptyView()
             }
             .hidden()
+            
         }
     }
     private var editButton: some View {
@@ -210,6 +214,7 @@ struct ContentView: View {
         static var previews: some View {
             
             ContentView()
+                .environmentObject(WebService.service)
             
         }
     }

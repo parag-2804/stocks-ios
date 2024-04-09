@@ -12,12 +12,56 @@ import Foundation
 
 class WebService: ObservableObject {
     
-    
+    static let service = WebService()
     private let baseUrl = URL(string: "http://localhost:8080/")!
     @Published var autocompleteSuggestions: [FilteredAutoResult] = []
     private var debounceWorkItem: DispatchWorkItem?
     private let debounceInterval: TimeInterval = 0.5
+    @Published var descData: companyDescData?
+    @Published var peers: [String] = []
     
+    func fetchAPI() {
+        getCompanyDesc { result in
+            switch result {
+            case .success(let companyDesc):
+                    self.descData = companyDesc
+                    // Handle successful retrieval of the company description
+                print("Company Description: \(self.descData)")
+                
+            case .failure(let error):
+                // Handle error
+                print("Error fetching company description: \(error)")
+            }
+
+            // Note: This is a simple example. In a real app, consider how you want to handle
+            // the asynchronous nature of these calls, especially if you need both results
+            // together for further processing.
+        }
+
+        getStockPrice { result in
+            switch result {
+            case .success(let stockPrice):
+                // Handle successful retrieval of the stock price
+                print("Stock Price: \(stockPrice)")
+            case .failure(let error):
+                // Handle error
+                print("Error fetching stock price: \(error)")
+            }
+        }
+        getCompanyPeers { result in
+            switch result {
+            case .success(let companyP):
+                // Handle successful retrieval of the stock price
+                self.peers = companyP
+                print("Company Peers: \(self.peers)")
+            case .failure(let error):
+                // Handle error
+                print("Error fetching peers: \(error)")
+            }
+        }
+        
+    }
+
     // Generic method to fetch data from the server
     private func fetchData<T: Decodable>(url: URL, completion: @escaping (Result<T, Error>) -> Void) {
         URLSession.shared.dataTask(with: url) { data, response, error in
@@ -37,15 +81,23 @@ class WebService: ObservableObject {
         }.resume()
     }
     
-    func getCompanyDesc(ticker: String, completion: @escaping (Result<CompanyDesc, Error>) -> Void) {
-        let url = baseUrl.appendingPathComponent("companyDesc/\(ticker)")
+    
+    
+    func getCompanyDesc(completion: @escaping (Result<companyDescData, Error>) -> Void) {
+        let url = baseUrl.appendingPathComponent("companyDesc/\(SharedData.shared.ticker)")
         fetchData(url: url, completion: completion)
     }
     
-    func getStockPrice(ticker: String, completion: @escaping (Result<StockPrice, Error>) -> Void) {
-        let url = baseUrl.appendingPathComponent("stockPrice/\(ticker)")
+    func getStockPrice(completion: @escaping (Result<StockPrice, Error>) -> Void) {
+        let url = baseUrl.appendingPathComponent("stockPrice/\(SharedData.shared.ticker)")
         fetchData(url: url, completion: completion)
     }
+    
+    func getCompanyPeers(completion: @escaping (Result<[String], Error>) -> Void) {
+        let url = baseUrl.appendingPathComponent("companyPeers/\(SharedData.shared.ticker)")
+        fetchData(url: url, completion: completion)
+    }
+    
     
     // Add similar methods for other endpoints...
     
@@ -135,13 +187,32 @@ class WebService: ObservableObject {
         let description: String
         let displaySymbol: String
     }
-    struct CompanyDesc: Decodable {
-        // Define properties based on your JSON structure
-    }
     
+    struct companyDescData: Identifiable, Decodable {
+        let id: UUID = UUID()
+        let finnhubIndustry: String
+        let ipo: String
+        let name: String
+        let ticker: String
+        let weburl: String
+        
+        enum CodingKeys: String, CodingKey {
+            case finnhubIndustry, ipo, name, ticker, weburl
+        }
+        
+    }
     struct StockPrice: Decodable {
         // Define properties based on your JSON structure
     }
+    
+//    struct CompanyPeers: Decodable {
+//        let peers: [String]
+//        
+//        // Custom initializer isn't necessary unless the JSON structure is more complex
+//        // If the JSON is directly an array of strings, you can decode it as such.
+//    }
+//    
+    
     
     //struct : Decodable {
     //
