@@ -68,9 +68,9 @@ struct StockInfoView: View {
                     CompanyInfoView()
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
-//                    InsiderSentimentsView()
-//                        .listRowSeparator(.hidden)
-//                        .listRowBackground(Color.clear)
+                    InsiderSentimentsView()
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
                     
                     
                     
@@ -105,9 +105,6 @@ struct StockInfoView: View {
 
 
 struct stockheadView: View{
-    @State var currentVal = 171.09
-    @State var changeVal = -7.58
-    @State var changeper = -4.0
     @EnvironmentObject var webService: WebService
     var body: some View{
         
@@ -122,7 +119,7 @@ struct stockheadView: View{
             
             HStack(){
                 
-                Text(Utility.formatCurrency(currentVal))
+                Text(Utility.formatCurrency(webService.stockData?.currentPrice ?? 0))
                     .font(.title)
                     .fontWeight(.semibold)
                 
@@ -130,12 +127,12 @@ struct stockheadView: View{
                     
                     HStack{
                         
-                        Image(systemName: (changeVal > 0 ? "arrow.up.forward" : (changeVal < 0 ? "arrow.down.forward" : "minus")))
-                        Text(Utility.formatCurrency(changeVal))
+                        Image(systemName: (webService.stockData?.Change ?? 0 > 0.01 ? "arrow.up.forward" : (webService.stockData?.Change ?? 0 < 0.01 ? "arrow.down.forward" : "minus")))
+                        Text(Utility.formatCurrency(webService.stockData?.Change ?? 0))
                         
                         
-                        Text("(\(Utility.formatVal(changeper))%)")
-                    }.foregroundColor(changeVal > 0 ? .green : (changeVal < 0 ? .red : .gray))
+                        Text("(\(Utility.formatVal(webService.stockData?.PercentChange ?? 0))%)")
+                    }.foregroundColor(webService.stockData?.Change ?? 0 > 0.01 ? .green : (webService.stockData?.Change ?? 0 < 0.01 ? .red : .gray))
                 }
                 
             }
@@ -261,8 +258,12 @@ struct PortfView: View {
                         }
                     }
                 } else {
-                    Text("You have 0 shares of AAPL.\nStart trading!")
-//                        .multilineTextAlignment(.leading)
+                    VStack(alignment: .leading){
+                        Text("You have 0 shares of \(SharedData.shared.ticker)")
+                        Text("Start trading!")
+                            
+                    }
+                   
                 }
                 
             }
@@ -284,18 +285,17 @@ struct PortfView: View {
     
 }
 
-struct StockStats {
-    var highPrice: Double
-    var openPrice: Double
-    var lowPrice: Double
-    var previousClose: Double
-}
+//struct StockStats {
+//    var highPrice: Double
+//    var openPrice: Double
+//    var lowPrice: Double
+//    var previousClose: Double
+//}
 
 
 
 struct StockStatsView: View {
-    
-    let stockStats = StockStats(highPrice: 177.49, openPrice: 177.00, lowPrice: 170.85, previousClose: 178.67)
+    @EnvironmentObject var webService: WebService
 
     var body: some View {
         VStack(alignment: .leading, spacing: 15) {
@@ -305,15 +305,15 @@ struct StockStatsView: View {
             
             HStack {
                 VStack(alignment: .leading) {
-                    Text("High Price: $\(stockStats.highPrice, specifier: "%.2f")")
-                    Text("Low Price: $\(stockStats.lowPrice, specifier: "%.2f")")
+                    Text("High Price: $\(webService.stockData?.high ?? 0, specifier: "%.2f")")
+                    Text("Low Price: $\(webService.stockData?.low ?? 0, specifier: "%.2f")")
                 }
                 
                 Spacer()
                 
                 VStack(alignment: .leading) {
-                    Text("Open Price: $\(stockStats.openPrice, specifier: "%.2f")")
-                    Text("Prev. Close: $\(stockStats.previousClose, specifier: "%.2f")")
+                    Text("Open Price: $\(webService.stockData?.open ?? 0, specifier: "%.2f")")
+                    Text("Prev. Close: $\(webService.stockData?.previousClose ?? 0, specifier: "%.2f")")
                 }
             }
         }
@@ -417,16 +417,15 @@ struct InsiderSentiments {
     var change: SentimentValues
 }
 struct InsiderSentimentsView: View {
-    var sentiments = InsiderSentiments(
-        mspr: SentimentValues(positive: 200.00, negative: -854.26),
-        change: SentimentValues(positive: 200.00, negative: -854.26)
-    )
+    @EnvironmentObject var webService: WebService
+    
+ 
 
     var body: some View {
         VStack(alignment: .leading) {
             
             Text("Insider Sentiments")
-                .font(.title)
+                .font(.title2)
                 
                 
             
@@ -444,15 +443,15 @@ struct InsiderSentimentsView: View {
 
             
             
-
-            SentimentRow(category: "Total", msprValue: sentiments.mspr.total, changeValue: sentiments.change.total)
             Divider()
-            SentimentRow(category: "Positive", msprValue: sentiments.mspr.positive, changeValue: sentiments.change.positive)
+            SentimentRow(category: "Total", msprValue: (webService.insiderSums.positiveMsprSum + webService.insiderSums.negativeMsprSum), changeValue: Double((webService.insiderSums.positiveChangeSum + webService.insiderSums.negativeChangeSum)))
             Divider()
-            SentimentRow(category: "Negative", msprValue: sentiments.mspr.negative, changeValue: sentiments.change.negative)
+            SentimentRow(category: "Positive", msprValue: webService.insiderSums.positiveMsprSum, changeValue: Double(webService.insiderSums.positiveChangeSum))
+            Divider()
+            SentimentRow(category: "Negative", msprValue: webService.insiderSums.negativeMsprSum, changeValue: Double(webService.insiderSums.negativeChangeSum))
             Divider()
         }
-        .padding()
+        .padding(.horizontal, -20.0)
     }
 }
 
@@ -473,7 +472,7 @@ struct SentimentRow: View {
             Text(String(format: "%.2f", msprValue))
                 .frame(width: 80, alignment: .trailing)
             Spacer()
-            Text(String(format: "%.2f", changeValue))
+            Text(String(format: "%0.f", changeValue))
                 .frame(width: 80, alignment: .trailing)
         }
         .padding([.top, .bottom], 5)
@@ -482,11 +481,17 @@ struct SentimentRow: View {
 
 
 
-#Preview{
-    InsiderSentimentsView()
-        .environmentObject(WebService.service)
-        
-}
+
+
+
+
+
+
+//#Preview{
+//   InsiderSentimentsView()
+//        .environmentObject(WebService.service)
+//        
+//}
 
 
 #Preview {

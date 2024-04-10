@@ -18,7 +18,9 @@ class WebService: ObservableObject {
     private var debounceWorkItem: DispatchWorkItem?
     private let debounceInterval: TimeInterval = 0.5
     @Published var descData: companyDescData?
+    @Published var stockData: StockPrice?
     @Published var peers: [String] = []
+    @Published var insiderSums = InsiderSums()
     
     func fetchAPI() {
         getCompanyDesc { result in
@@ -26,7 +28,7 @@ class WebService: ObservableObject {
             case .success(let companyDesc):
                     self.descData = companyDesc
                     // Handle successful retrieval of the company description
-                print("Company Description: \(self.descData)")
+               // print("Company Description: \(self.descData)")
                 
             case .failure(let error):
                 // Handle error
@@ -41,8 +43,9 @@ class WebService: ObservableObject {
         getStockPrice { result in
             switch result {
             case .success(let stockPrice):
+                self.stockData = stockPrice
                 // Handle successful retrieval of the stock price
-                print("Stock Price: \(stockPrice)")
+                //print("Stock Price: \(self.stockData)")
             case .failure(let error):
                 // Handle error
                 print("Error fetching stock price: \(error)")
@@ -51,7 +54,7 @@ class WebService: ObservableObject {
         getCompanyPeers { result in
             switch result {
             case .success(let companyP):
-                // Handle successful retrieval of the stock price
+               
                 self.peers = companyP
                 print("Company Peers: \(self.peers)")
             case .failure(let error):
@@ -59,6 +62,21 @@ class WebService: ObservableObject {
                 print("Error fetching peers: \(error)")
             }
         }
+        getinsiderSent { result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success(let insiderResponse):
+                        let sums = insiderResponse.calculateSums()
+                        self.insiderSums.positiveChangeSum = sums.positiveChange
+                        self.insiderSums.negativeChangeSum = sums.negativeChange
+                        self.insiderSums.positiveMsprSum = sums.positiveMspr
+                        self.insiderSums.negativeMsprSum = sums.negativeMspr
+                        print("Insider Data Success: \(sums)")
+                    case .failure(let error):
+                        print("Error fetching insider sentiment data: \(error)")
+                    }
+                }
+            }
         
     }
 
@@ -95,6 +113,11 @@ class WebService: ObservableObject {
     
     func getCompanyPeers(completion: @escaping (Result<[String], Error>) -> Void) {
         let url = baseUrl.appendingPathComponent("companyPeers/\(SharedData.shared.ticker)")
+        fetchData(url: url, completion: completion)
+    }
+    
+    func getinsiderSent(completion: @escaping (Result<insiderResponse, Error>) -> Void) {
+        let url = baseUrl.appendingPathComponent("insiderSentiment/\(SharedData.shared.ticker)")
         fetchData(url: url, completion: completion)
     }
     
@@ -202,23 +225,56 @@ class WebService: ObservableObject {
         
     }
     struct StockPrice: Decodable {
-        // Define properties based on your JSON structure
+        let currentPrice: Double
+        let Change: Double
+        let PercentChange: Double
+        let high: Double
+        let low: Double
+        let open: Double
+        let previousClose: Double
+        let timestamp: Int
+
+        enum CodingKeys: String, CodingKey {
+            case currentPrice = "c"
+            case Change = "d"
+            case PercentChange = "dp"
+            case high = "h"
+            case low = "l"
+            case open = "o"
+            case previousClose = "pc"
+            case timestamp = "t"
+        }
     }
     
-//    struct CompanyPeers: Decodable {
-//        let peers: [String]
-//        
-//        // Custom initializer isn't necessary unless the JSON structure is more complex
-//        // If the JSON is directly an array of strings, you can decode it as such.
-//    }
-//    
+    struct insiderResponse: Decodable {
+        let data: [insiderData]
+        let symbol: String
+        
+        // Function to calculate the sums
+        func calculateSums() -> (positiveChange: Int, negativeChange: Int, positiveMspr: Double, negativeMspr: Double) {
+            let positiveChange = data.filter { $0.change > 0 }.reduce(0) { $0 + $1.change }
+            let negativeChange = data.filter { $0.change < 0 }.reduce(0) { $0 + $1.change }
+            let positiveMspr = data.filter { $0.mspr > 0 }.reduce(0.0) { $0 + $1.mspr }
+            let negativeMspr = data.filter { $0.mspr < 0 }.reduce(0.0) { $0 + $1.mspr }
+            
+            return (positiveChange, negativeChange, positiveMspr, negativeMspr)
+        }
+    }
+
+    struct insiderData: Decodable {
+        let symbol: String
+        let year: Int
+        let month: Int
+        let change: Int
+        let mspr: Double
+    }
     
-    
-    //struct : Decodable {
-    //
-    //}
-    
-    
-    // Define other structs as needed...
+    struct InsiderSums {
+        var positiveChangeSum: Int = 0
+        var negativeChangeSum: Int = 0
+        var positiveMsprSum: Double = 0.0
+        var negativeMsprSum: Double = 0.0
+    }
+
     
 }
