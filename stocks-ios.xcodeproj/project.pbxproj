@@ -18,6 +18,8 @@
 		2B8CB5922BBF601300A807A0 /* StockInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B8CB5912BBF601300A807A0 /* StockInfoView.swift */; };
 		2B8CB5942BBFA74300A807A0 /* Utility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B8CB5932BBFA74200A807A0 /* Utility.swift */; };
 		2B8CB5962BC16FB000A807A0 /* Webservice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B8CB5952BC16FB000A807A0 /* Webservice.swift */; };
+		2B8CB5982BC732E700A807A0 /* NewsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B8CB5972BC732E700A807A0 /* NewsView.swift */; };
+		2B8CB59B2BC7346300A807A0 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 2B8CB59A2BC7346300A807A0 /* Kingfisher */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -53,6 +55,7 @@
 		2B8CB5912BBF601300A807A0 /* StockInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StockInfoView.swift; sourceTree = "<group>"; };
 		2B8CB5932BBFA74200A807A0 /* Utility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utility.swift; sourceTree = "<group>"; };
 		2B8CB5952BC16FB000A807A0 /* Webservice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Webservice.swift; sourceTree = "<group>"; };
+		2B8CB5972BC732E700A807A0 /* NewsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -60,6 +63,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2B8CB59B2BC7346300A807A0 /* Kingfisher in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -109,6 +113,7 @@
 				2B8CB5642BBE44D900A807A0 /* stocks_iosApp.swift */,
 				2B8CB5662BBE44D900A807A0 /* ContentView.swift */,
 				2B8CB5912BBF601300A807A0 /* StockInfoView.swift */,
+				2B8CB5972BC732E700A807A0 /* NewsView.swift */,
 				2B8CB5682BBE44DA00A807A0 /* Assets.xcassets */,
 				2B8CB56A2BBE44DA00A807A0 /* Preview Content */,
 			);
@@ -157,6 +162,9 @@
 			dependencies = (
 			);
 			name = "stocks-ios";
+			packageProductDependencies = (
+				2B8CB59A2BC7346300A807A0 /* Kingfisher */,
+			);
 			productName = "stocks-ios";
 			productReference = 2B8CB5612BBE44D900A807A0 /* stocks-ios.app */;
 			productType = "com.apple.product-type.application";
@@ -229,6 +237,9 @@
 				Base,
 			);
 			mainGroup = 2B8CB5582BBE44D800A807A0;
+			packageReferences = (
+				2B8CB5992BC7346300A807A0 /* XCRemoteSwiftPackageReference "Kingfisher" */,
+			);
 			productRefGroup = 2B8CB5622BBE44D900A807A0 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -275,6 +286,7 @@
 				2B8CB5942BBFA74300A807A0 /* Utility.swift in Sources */,
 				2B8CB5922BBF601300A807A0 /* StockInfoView.swift in Sources */,
 				2B8CB5672BBE44D900A807A0 /* ContentView.swift in Sources */,
+				2B8CB5982BC732E700A807A0 /* NewsView.swift in Sources */,
 				2B8CB5962BC16FB000A807A0 /* Webservice.swift in Sources */,
 				2B8CB5652BBE44D900A807A0 /* stocks_iosApp.swift in Sources */,
 			);
@@ -612,6 +624,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		2B8CB5992BC7346300A807A0 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 7.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		2B8CB59A2BC7346300A807A0 /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2B8CB5992BC7346300A807A0 /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 2B8CB5592BBE44D800A807A0 /* Project object */;
 }

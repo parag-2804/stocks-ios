@@ -20,7 +20,7 @@ class SharedData: ObservableObject {
 
 
 struct ContentView: View {
-    @State private var isEditMode = false
+//    @State private var isEditMode = false
     @State private var query: String = ""
 //    @StateObject var webService = WebService()
     @EnvironmentObject var webService: WebService
@@ -65,9 +65,12 @@ struct ContentView: View {
                     }
                 }
             }
-            .listStyle(PlainListStyle())
+
             .navigationBarTitle("Stocks")
-            .navigationBarItems(trailing: editButton)
+            .toolbar{
+                EditButton()
+            }
+//            .navigationBarItems(trailing: editButton)
             .searchable(text: $query, prompt: "Search")
             .onChange(of: query) { _ in
                 webService.fetchAutocompleteResults(query: query)
@@ -79,13 +82,13 @@ struct ContentView: View {
             
         }
     }
-    private var editButton: some View {
-        Button(action: {
-            isEditMode.toggle()
-        }) {
-            Text(isEditMode ? "Done" : "Edit")
-        }
-    }
+//    private var editButton: some View {
+//        Button(action: {
+//            isEditMode.toggle()
+//        }) {
+//            Text(isEditMode ? "Done" : "Edit")
+//        }
+//    }
 }
 
     

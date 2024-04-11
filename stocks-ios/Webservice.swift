@@ -7,8 +7,21 @@
 
 import Foundation
 import UIKit
-
+import Kingfisher
 import Foundation
+
+
+struct NewsItem: Decodable, Identifiable {
+    let id: Int
+    let category: String
+    let datetime: TimeInterval
+    let headline: String
+    let image: String
+    let related: String
+    let source: String
+    let summary: String
+    let url: String
+}
 
 class WebService: ObservableObject {
     
@@ -21,6 +34,10 @@ class WebService: ObservableObject {
     @Published var stockData: StockPrice?
     @Published var peers: [String] = []
     @Published var insiderSums = InsiderSums()
+    typealias Recommendations = [Recommendation]
+    @Published var recommendationData: Recommendations = []
+    @Published var filteredNewsItems: [NewsItem] = []
+    
     
     func fetchAPI() {
         getCompanyDesc { result in
@@ -71,14 +88,44 @@ class WebService: ObservableObject {
                         self.insiderSums.negativeChangeSum = sums.negativeChange
                         self.insiderSums.positiveMsprSum = sums.positiveMspr
                         self.insiderSums.negativeMsprSum = sums.negativeMspr
-                        print("Insider Data Success: \(sums)")
+//                        print("Insider Data Success: \(sums)")
                     case .failure(let error):
                         print("Error fetching insider sentiment data: \(error)")
                     }
                 }
             }
         
+        getrecomChartData { result in
+                    DispatchQueue.main.async {
+                        switch result {
+                        case .success(let recommendations):
+                            self.recommendationData = recommendations
+                        case .failure(let error):
+                            print("Error fetching recommendation data: \(error)")
+                        }
+                    }
+                }
+        
+        getNewsData { [weak self] result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success(let newsItems):
+                        // Filter news items to include only those with a non-empty image link
+                        // and then take only the first 10 items
+                        let filteredWithImages = newsItems.filter { !$0.image.isEmpty }
+                        self?.filteredNewsItems = Array(filteredWithImages.prefix(10))
+                        print("Filtered News Items: \(self?.filteredNewsItems.count ?? 0)")
+                    case .failure(let error):
+                        // Handle error
+                        print("Error fetching news data: \(error)")
+                        self?.filteredNewsItems = []
+                    }
+                }
+            }
+            
     }
+        
+    
 
     // Generic method to fetch data from the server
     private func fetchData<T: Decodable>(url: URL, completion: @escaping (Result<T, Error>) -> Void) {
@@ -120,6 +167,17 @@ class WebService: ObservableObject {
         let url = baseUrl.appendingPathComponent("insiderSentiment/\(SharedData.shared.ticker)")
         fetchData(url: url, completion: completion)
     }
+    
+    func getrecomChartData(completion: @escaping (Result<Recommendations, Error>) -> Void) {
+    let url = baseUrl.appendingPathComponent("recommendation/\(SharedData.shared.ticker)")
+    fetchData(url: url, completion: completion)
+    }
+    
+    func getNewsData(completion: @escaping (Result<[NewsItem], Error>) -> Void) {
+        let url = baseUrl.appendingPathComponent("companyNews/\(SharedData.shared.ticker)")
+        fetchData(url: url, completion: completion)
+    }
+    
     
     
     // Add similar methods for other endpoints...
@@ -275,6 +333,18 @@ class WebService: ObservableObject {
         var positiveMsprSum: Double = 0.0
         var negativeMsprSum: Double = 0.0
     }
+    
+    struct Recommendation: Decodable {
+        let buy: Int
+        let hold: Int
+        let period: String
+        let sell: Int
+        let strongBuy: Int
+        let strongSell: Int
+        let symbol: String
+    }
+    
+    
 
     
 }

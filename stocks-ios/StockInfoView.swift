@@ -7,7 +7,7 @@
 
 import SwiftUI
 import UIKit
-
+import Kingfisher
 
 
 struct StockInfoView: View {
@@ -71,12 +71,16 @@ struct StockInfoView: View {
                     InsiderSentimentsView()
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
-                    
+                   
+                    NewsView()
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
                     
                     
                     
                 }
-//                .frame(maxWidth: .infinity, alignment: .leading)
+//                .frame(maxWidth: .infinity, alignment: .leading).listRowBackground(Color.clear) // Set individual row background to transparent
+               
                 
                 
             }
@@ -478,6 +482,8 @@ struct SentimentRow: View {
         .padding([.top, .bottom], 5)
     }
 }
+
+
 
 
 
