@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EPS Trends Chart</title>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+</head>
+<body>
+    <div id="epsChartContainer" style="height: 350px; width: 100%; margin: 0 auto;"></div>
+    <script>
+        function loadEPSChartData(jsonData) {
+
+            try {
+                var dataEPS = JSON.parse(decodeURIComponent(jsonData));
+                    // Existing code to update Highcharts chart...
+                } catch (e) {
+                    console.error('Error parsing JSON data: ', e);
+                    // Handle errors, possibly show an error message in the chart container
+                }
+            var epsSurpriseDataX = [];
+            var actualData = [];
+            var estimateData = [];
+            
+            dataEPS.forEach(function(item) {
+                var label = item.period + " Surprise: " + item.surprise;
+                epsSurpriseDataX.push(label);
+                actualData.push([label, item.actual]);
+                estimateData.push([label, item.estimate]);
+            });
+            
+            var chartOptionsHistorical = {
+                title: {
+                    text: 'Historical EPS Surprises',
+                    style: {
+                        fontSize: '15px',
+                        color: '#29363E',
+                    },
+                },
+                yAxis: {
+                    title: {
+                        text: 'Quarterly EPS',
+                    },
+                },
+                xAxis: {
+                    type: 'category',
+                    categories: epsSurpriseDataX,
+                    labels: {
+                        rotation: 0,
+                        useHTML: true,
+                        allowOverlap: true,
+                        style: {
+                            fontSize: '10px',
+                            wordBreak: 'break-all',
+                            textAlign: 'center',
+                            textOverflow: 'allow',
+                        },
+                    },
+                },
+                legend: {
+                    layout: 'vertical',
+                    align: 'right',
+                    verticalAlign: 'middle',
+                },
+                plotOptions: {
+                    series: {
+                        label: {
+                            connectorAllowed: false,
+                        },
+                        pointStart: 2010,
+                    },
+                },
+                series: [
+                    {
+                        name: 'Actual',
+                        type: 'spline',
+                        data: actualData,
+                    },
+                    {
+                        name: 'Estimate',
+                        type: 'spline',
+                        data: estimateData,
+                    },
+                ],
+                responsive: {
+                    rules: [
+                        {
+                            condition: {
+                                maxWidth: 500,
+                            },
+                            chartOptions: {
+                                legend: {
+                                    layout: 'horizontal',
+                                    align: 'center',
+                                    verticalAlign: 'bottom',
+                                },
+                            },
+                        },
+                    ],
+                },
+            };
+            
+            Highcharts.chart('epsChartContainer', chartOptionsHistorical);
+        }
+    </script>
+</body>
+</html>

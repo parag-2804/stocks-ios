@@ -9,7 +9,45 @@ import Foundation
 import UIKit
 import Kingfisher
 import Foundation
+import WebKit
 
+
+struct companyDescData: Identifiable, Decodable {
+    let id: UUID = UUID()
+    let finnhubIndustry: String
+    let ipo: String
+    let logo: String
+    let name: String
+    let ticker: String
+    let weburl: String
+    
+    enum CodingKeys: String, CodingKey {
+        case finnhubIndustry, ipo, logo, name, ticker, weburl
+    }
+    
+}
+
+struct StockPrice: Decodable {
+    let currentPrice: Double
+    let Change: Double
+    let PercentChange: Double
+    let high: Double
+    let low: Double
+    let open: Double
+    let previousClose: Double
+    let timestamp: Int
+
+    enum CodingKeys: String, CodingKey {
+        case currentPrice = "c"
+        case Change = "d"
+        case PercentChange = "dp"
+        case high = "h"
+        case low = "l"
+        case open = "o"
+        case previousClose = "pc"
+        case timestamp = "t"
+    }
+}
 
 struct NewsItem: Decodable, Identifiable {
     let id: Int
@@ -34,10 +72,13 @@ class WebService: ObservableObject {
     @Published var stockData: StockPrice?
     @Published var peers: [String] = []
     @Published var insiderSums = InsiderSums()
-    typealias Recommendations = [Recommendation]
-    @Published var recommendationData: Recommendations = []
+//    typealias Recommendations = [Recommendation]
+//    @Published var recommendationData: Recommendations = []
     @Published var filteredNewsItems: [NewsItem] = []
-    
+    @Published var recommendationChartDataJson: String?
+    @Published var EPSChartDataJson: String?
+    @Published var HourlyChartDataJson: String?
+    @Published var HistoricalChartDataJson: String?
     
     func fetchAPI() {
         getCompanyDesc { result in
@@ -73,7 +114,7 @@ class WebService: ObservableObject {
             case .success(let companyP):
                
                 self.peers = companyP
-                print("Company Peers: \(self.peers)")
+//                print("Company Peers: \(self.peers)")
             case .failure(let error):
                 // Handle error
                 print("Error fetching peers: \(error)")
@@ -95,16 +136,16 @@ class WebService: ObservableObject {
                 }
             }
         
-        getrecomChartData { result in
-                    DispatchQueue.main.async {
-                        switch result {
-                        case .success(let recommendations):
-                            self.recommendationData = recommendations
-                        case .failure(let error):
-                            print("Error fetching recommendation data: \(error)")
-                        }
-                    }
-                }
+//        getrecomChartData { result in
+//                    DispatchQueue.main.async {
+//                        switch result {
+//                        case .success(let recommendations):
+//                            self.recommendationData = recommendations
+//                        case .failure(let error):
+//                            print("Error fetching recommendation data: \(error)")
+//                        }
+//                    }
+//                }
         
         getNewsData { [weak self] result in
                 DispatchQueue.main.async {
@@ -114,7 +155,7 @@ class WebService: ObservableObject {
                         // and then take only the first 10 items
                         let filteredWithImages = newsItems.filter { !$0.image.isEmpty }
                         self?.filteredNewsItems = Array(filteredWithImages.prefix(10))
-                        print("Filtered News Items: \(self?.filteredNewsItems.count ?? 0)")
+//                        print("Filtered News Items: \(self?.filteredNewsItems.count ?? 0)")
                     case .failure(let error):
                         // Handle error
                         print("Error fetching news data: \(error)")
@@ -123,6 +164,12 @@ class WebService: ObservableObject {
                 }
             }
             
+        
+        fetchRecommendationChartData()
+        fetchEPSChartData()
+//        fetchHourlyChartData()
+//        fetchHistoricalChartData()
+        
     }
         
     
@@ -168,10 +215,7 @@ class WebService: ObservableObject {
         fetchData(url: url, completion: completion)
     }
     
-    func getrecomChartData(completion: @escaping (Result<Recommendations, Error>) -> Void) {
-    let url = baseUrl.appendingPathComponent("recommendation/\(SharedData.shared.ticker)")
-    fetchData(url: url, completion: completion)
-    }
+
     
     func getNewsData(completion: @escaping (Result<[NewsItem], Error>) -> Void) {
         let url = baseUrl.appendingPathComponent("companyNews/\(SharedData.shared.ticker)")
@@ -179,11 +223,157 @@ class WebService: ObservableObject {
     }
     
     
+    func fetchRecommendationChartData() {
+        let urlString = "http://localhost:8080/recommendation/\(SharedData.shared.ticker)"
+        guard let url = URL(string: urlString) else {
+            print("Invalid URL")
+            return
+        }
+
+        let task = URLSession.shared.dataTask(with: url) { [weak self] data, _, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    print("Error fetching recommendation data: \(error)")
+                    self?.recommendationChartDataJson = nil // Clear any existing data if error occurs
+                    return
+                }
+
+                guard let data = data else {
+                    print("No data received")
+                    self?.recommendationChartDataJson = nil // Clear any existing data if no data received
+                    return
+                }
+
+                // Convert to a non-optional JSON object to remove "Optional" wrapper
+                if let jsonObject = try? JSONSerialization.jsonObject(with: data),
+                   let jsonData = try? JSONSerialization.data(withJSONObject: jsonObject),
+                   let jsonString = String(data: jsonData, encoding: .utf8) {
+                    self?.recommendationChartDataJson = jsonString
+//                    print("Recommendation Chart JSON: \(jsonString)")
+                } else {
+                    print("Data could not be converted to JSON string")
+                    self?.recommendationChartDataJson = nil // Clear any existing data if conversion fails
+                }
+            }
+        }
+
+        task.resume()
+    }
     
-    // Add similar methods for other endpoints...
+    func fetchEPSChartData() {
+        let urlString = "http://localhost:8080/companyEarnings/\(SharedData.shared.ticker)"
+        guard let url = URL(string: urlString) else {
+            print("Invalid URL")
+            return
+        }
+
+        let task = URLSession.shared.dataTask(with: url) { [weak self] data, _, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    print("Error fetching recommendation data: \(error)")
+                    self?.EPSChartDataJson = nil // Clear any existing data if error occurs
+                    return
+                }
+
+                guard let data = data else {
+                    print("No data received")
+                    self?.EPSChartDataJson = nil // Clear any existing data if no data received
+                    return
+                }
+
+                // Convert to a non-optional JSON object to remove "Optional" wrapper
+                if let jsonObject = try? JSONSerialization.jsonObject(with: data),
+                   let jsonData = try? JSONSerialization.data(withJSONObject: jsonObject),
+                   let jsonString = String(data: jsonData, encoding: .utf8) {
+                    self?.EPSChartDataJson = jsonString
+//                    print("Recommendation Chart JSON: \(jsonString)")
+                } else {
+                    print("Data could not be converted to JSON string")
+                    self?.EPSChartDataJson = nil // Clear any existing data if conversion fails
+                }
+            }
+        }
+
+        task.resume()
+    }
     
+    func fetchHourlyChartData() {
+        let urlString = "http://localhost:8080/companyHourly/\(SharedData.shared.ticker)"
+        guard let url = URL(string: urlString) else {
+            print("Invalid URL")
+            return
+        }
+
+        let task = URLSession.shared.dataTask(with: url) { [weak self] data, _, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    print("Error fetching recommendation data: \(error)")
+                    self?.HourlyChartDataJson = nil // Clear any existing data if error occurs
+                    return
+                }
+
+                guard let data = data else {
+                    print("No data received")
+                    self?.HourlyChartDataJson = nil // Clear any existing data if no data received
+                    return
+                }
+
+                // Convert to a non-optional JSON object to remove "Optional" wrapper
+                if let jsonObject = try? JSONSerialization.jsonObject(with: data),
+                   let jsonData = try? JSONSerialization.data(withJSONObject: jsonObject),
+                   let jsonString = String(data: jsonData, encoding: .utf8) {
+                    self?.HourlyChartDataJson = jsonString
+//                    print("Recommendation Chart JSON: \(jsonString)")
+                } else {
+                    print("Data could not be converted to JSON string")
+                    self?.HourlyChartDataJson = nil // Clear any existing data if conversion fails
+                }
+            }
+        }
+
+        task.resume()
+    }
     
- 
+    func fetchHistoricalChartData() {
+        let urlString = "http://localhost:8080/historicalChart/\(SharedData.shared.ticker)"
+        guard let url = URL(string: urlString) else {
+            print("Invalid URL")
+            return
+        }
+
+        let task = URLSession.shared.dataTask(with: url) { [weak self] data, _, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    print("Error fetching recommendation data: \(error)")
+                    self?.HistoricalChartDataJson = nil // Clear any existing data if error occurs
+                    return
+                }
+
+                guard let data = data else {
+                    print("No data received")
+                    self?.HistoricalChartDataJson = nil // Clear any existing data if no data received
+                    return
+                }
+
+                // Convert to a non-optional JSON object to remove "Optional" wrapper
+                if let jsonObject = try? JSONSerialization.jsonObject(with: data),
+                   let jsonData = try? JSONSerialization.data(withJSONObject: jsonObject),
+                   let jsonString = String(data: jsonData, encoding: .utf8) {
+                    self?.HistoricalChartDataJson = jsonString
+//                    print("Historical Chart JSON: \(jsonString)")
+                } else {
+                    print("Data could not be converted to JSON string")
+                    self?.HistoricalChartDataJson = nil // Clear any existing data if conversion fails
+                }
+            }
+        }
+
+        task.resume()
+    }
+    
+
+        
+
 //    func fetchAutocompleteResults(query: String) {
 //        let url = baseUrl.appendingPathComponent("autocomplete/\(query)")
 //        fetchData(url: url) { [weak self] (result: Result<AutocompleteResponse, Error>) in
@@ -241,7 +431,15 @@ class WebService: ObservableObject {
             debounceWorkItem = requestWorkItem
             DispatchQueue.main.asyncAfter(deadline: .now() + debounceInterval, execute: requestWorkItem)
         }
-    
+//    
+//    func updateRecomChartData(webView: WKWebView, data: String) {
+//        let script = "loadDataForRecomChart(\(data));"
+//        webView.evaluateJavaScript(script) { (result, error) in
+//            if let error = error {
+//                print("Error injecting data into WebView:", error.localizedDescription)
+//            }
+//        }
+//    }
     
     
     // Example structs for parsing JSON responses (you need to adjust these according to your actual JSON structure)
@@ -269,40 +467,8 @@ class WebService: ObservableObject {
         let displaySymbol: String
     }
     
-    struct companyDescData: Identifiable, Decodable {
-        let id: UUID = UUID()
-        let finnhubIndustry: String
-        let ipo: String
-        let name: String
-        let ticker: String
-        let weburl: String
-        
-        enum CodingKeys: String, CodingKey {
-            case finnhubIndustry, ipo, name, ticker, weburl
-        }
-        
-    }
-    struct StockPrice: Decodable {
-        let currentPrice: Double
-        let Change: Double
-        let PercentChange: Double
-        let high: Double
-        let low: Double
-        let open: Double
-        let previousClose: Double
-        let timestamp: Int
-
-        enum CodingKeys: String, CodingKey {
-            case currentPrice = "c"
-            case Change = "d"
-            case PercentChange = "dp"
-            case high = "h"
-            case low = "l"
-            case open = "o"
-            case previousClose = "pc"
-            case timestamp = "t"
-        }
-    }
+    
+    
     
     struct insiderResponse: Decodable {
         let data: [insiderData]
@@ -334,16 +500,16 @@ class WebService: ObservableObject {
         var negativeMsprSum: Double = 0.0
     }
     
-    struct Recommendation: Decodable {
-        let buy: Int
-        let hold: Int
-        let period: String
-        let sell: Int
-        let strongBuy: Int
-        let strongSell: Int
-        let symbol: String
-    }
-    
+//    struct Recommendation: Codable {
+//        let buy: Int
+//        let hold: Int
+//        let period: String
+//        let sell: Int
+//        let strongBuy: Int
+//        let strongSell: Int
+//        let symbol: String
+//    }
+//    
     
 
     

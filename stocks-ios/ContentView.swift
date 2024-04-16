@@ -8,22 +8,23 @@
 import SwiftUI
 import UIKit
 
-//
+
 
 
 class SharedData: ObservableObject {
     static let shared = SharedData() // Shared instance
-    @Published var ticker: String = ""
+    @Published var ticker: String = "AAPL"
 }
 
 
 
 
 struct ContentView: View {
-//    @State private var isEditMode = false
+    @State private var isEditMode: EditMode = .inactive
     @State private var query: String = ""
 //    @StateObject var webService = WebService()
     @EnvironmentObject var webService: WebService
+    @EnvironmentObject var viewModel: Watchlist
     
     // State to manage the selected suggestion
     @State private var isselected: Bool = false
@@ -32,22 +33,25 @@ struct ContentView: View {
         NavigationStack {
             List {
                 if query.isEmpty {
-                    // Regular content
-                    headerView()
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
-                    portfolioHomeView()
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
-                    favView()
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
-//                    NavigationLink(destination: StockInfoView()) {
-//                        Text("Show AAPL")
-//                    }
+                    
+                    Section{
+                        headerView()
+                    }
+
+                    Section(header: Text("Portfolio")){
+                        portfolioHomeView()
+                    }
+                    
+                    Section(header: Text("Favourites")){
+                        favView()
+                    } .onAppear {
+                        viewModel.fetchWatchlist()
+                    }
+                    
+                  Section{
                     footerView()
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
+                        }
+                    
                 } else {
                     // Search results
                     ForEach(webService.autocompleteSuggestions) { suggestion in
@@ -82,13 +86,7 @@ struct ContentView: View {
             
         }
     }
-//    private var editButton: some View {
-//        Button(action: {
-//            isEditMode.toggle()
-//        }) {
-//            Text(isEditMode ? "Done" : "Edit")
-//        }
-//    }
+
 }
 
     
@@ -108,11 +106,11 @@ struct ContentView: View {
                     .font(.title)
                     .fontWeight(.bold)
                     .foregroundColor(Color.gray)
-                    .padding(.leading, 10.0)
+
                 
             }
-            .frame(height: 55)
-            .padding(.horizontal, -20.0)
+            .frame(height: 40)
+
         }
     }
     
@@ -124,10 +122,6 @@ struct ContentView: View {
         
         var body: some View{
             VStack(alignment: .leading, spacing: 10) {
-                Text("Portfolio")
-                    .font(.subheadline)
-                    .fontWeight(.light)
-                    .foregroundColor(.gray)
                 
                 ZStack{
                     
@@ -162,40 +156,41 @@ struct ContentView: View {
                         .cornerRadius(8)
                     }
                     .padding(.horizontal)
+                    
+                    // Add Stocks in Portfolio and display as list
+                    
                 }.background(Color.white)
                     .cornerRadius(8)
                     .padding(.horizontal, -20.0)
                 
                 
-                // Add Stocks in Portfolio and display as list
+                
             }
         }
         
     }
     
-    struct favView: View{
-        
-        var body: some View{
-            
-            
-            VStack(alignment: .leading){
-                Text("Favourites")
-                    .font(.subheadline)
-                    .fontWeight(.light)
-                    .foregroundColor(.gray)
-                
-                
-                //ADD LIST OF FAVOURITES
-            }
-        }
-        
-        
-    }
+//    struct favView: View{
+//        
+//        var body: some View{
+//            
+//            
+//            VStack(alignment: .leading){
+//                Text("Favourites")
+//                    .font(.subheadline)
+//                    .fontWeight(.light)
+//                    .foregroundColor(.gray)
+//                
+//                
+//                //ADD LIST OF FAVOURITES
+//            }
+//        }
+//        
+//        
+//    }
     // View for the footer with the Finnhub.io link
     struct footerView: View {
         var body: some View{
-            
-            
             ZStack {
                 Rectangle()
                     .fill(Color.white)
@@ -206,8 +201,6 @@ struct ContentView: View {
                     .font(.footnote)
                     .foregroundColor(.gray)
             }
-            .frame(height: 40)
-            .padding(.horizontal, -20.0)
         }
     }
     
@@ -218,6 +211,7 @@ struct ContentView: View {
             
             ContentView()
                 .environmentObject(WebService.service)
+                .environmentObject(Watchlist())
             
         }
     }

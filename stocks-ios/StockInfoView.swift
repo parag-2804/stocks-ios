@@ -13,7 +13,7 @@ import Kingfisher
 struct StockInfoView: View {
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var webService: WebService
-  
+    @EnvironmentObject var viewModel: Watchlist
    
     @State var selectedChart: ChartType = .hourly
     @State var isAddedtoFav = false
@@ -25,65 +25,66 @@ struct StockInfoView: View {
     var body: some View {
         NavigationStack {
             
-            ZStack(alignment: .top){
-                Color.gray.opacity(0.3)
-                    .edgesIgnoringSafeArea(.all)
+            ScrollView{
                 
-                
-                List{
+                VStack(alignment: .leading, spacing: 15.0){
                     
                     stockheadView()
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
+                        
                     
                     
                     if selectedChart == .hourly
                     {
-                        HourlyChart
-                            .listRowSeparator(.hidden)
-                            .listRowBackground(Color.clear)
+                        Text("Hourly Chart")
+                        HourlyChartView()
+                            .frame(height: 400)
+                            
                     } else {
-                        HistoricalChart
-                            .listRowSeparator(.hidden)
-                            .listRowBackground(Color.clear)
+                        Text("Historical Chart")
+                        HistoricalChartView()
+                            .frame(height: 400)
+                           
                     }
                     
-//                    Spacer().frame(height: 250)
-//                        .listRowSeparator(.hidden)
-//                        .listRowBackground(Color.clear)
+
                     
                     ChartSwitcherView(selectedChart: $selectedChart)
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
+                      
                     
                     
                     PortfView()
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
+                      
                     
                     StockStatsView()
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
+                      
                     
                     CompanyInfoView()
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
+                     
+                    
                     InsiderSentimentsView()
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
+                     
+                    
+                    RecomChartView()
+                        .frame(height: 400)
+                        
+                    
+                    EPSChartView()
+                        .frame(height: 400)
+                      
                    
                     NewsView()
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
+                       
                     
                     
                     
                 }
-//                .frame(maxWidth: .infinity, alignment: .leading).listRowBackground(Color.clear) // Set individual row background to transparent
+                .frame(maxWidth: .infinity, alignment: .leading)
+
                
                 
                 
             }
+            .padding(.horizontal, 15.0)
             
             
             .navigationBarTitle(SharedData.shared.ticker)
@@ -91,7 +92,9 @@ struct StockInfoView: View {
                 // Plus button which might perform some action
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
+                        viewModel.addStockToWatchlist(symbol: SharedData.shared.ticker, companyName: webService.descData?.name ?? "XYZ")
                         isAddedtoFav.toggle()
+                        
                         
                     }) {
                         Image(systemName: isAddedtoFav ? "plus.circle.fill":  "plus.circle")
@@ -101,6 +104,7 @@ struct StockInfoView: View {
             }
             
         }
+      
     }
     
     
@@ -115,9 +119,20 @@ struct stockheadView: View{
         
         VStack(alignment: .leading, spacing: 15){
             
-            Text(webService.descData?.name ?? "Loading")
-                .font(.subheadline)
-                .foregroundColor(Color.gray)
+            HStack{
+                
+                Text(webService.descData?.name ?? "Loading")
+                    .font(.subheadline)
+                    .foregroundColor(Color.gray)
+                Spacer()
+                let imageUrl = URL(string: webService.descData?.logo ?? " ")
+                    KFImage(imageUrl)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 70, height: 70)
+//                        .clipped()
+//                        .cornerRadius(8)
+            }
             
             
             
@@ -126,7 +141,7 @@ struct stockheadView: View{
                 Text(Utility.formatCurrency(webService.stockData?.currentPrice ?? 0))
                     .font(.title)
                     .fontWeight(.semibold)
-                
+//                Spacer()
                 ZStack{
                     
                     HStack{
@@ -142,7 +157,7 @@ struct stockheadView: View{
             }
             
         }
-        .padding(.leading, -20.0)
+       
         .padding(.top, 10.0)
     }
     }
@@ -169,7 +184,7 @@ struct ChartSwitcherView: View {
             }
             .buttonStyle(PlainButtonStyle())
         }
-        .padding(.leading, 45.0)
+        .padding(.leading, 85.0)
     }
 }
 
@@ -191,17 +206,18 @@ struct ChartLabel: View {
     }
 }
 
-var HourlyChart: some View {
-    
-    // Replace with your actual chart view
-    Text("Hourly Chart Placeholder")
-}
-
-var HistoricalChart: some View {
-    
-    // Replace with your actual chart view
-    Text("Historical Chart Placeholder")
-}
+//var HourlyChart: some View {
+//    
+//    // Replace with your actual chart view
+//    Text("Hourly Chart Placeholder")
+//    HourlyChartView()
+//}
+//
+//var HistoricalChart: some View {
+//    
+//    // Replace with your actual chart view
+//    Text("Historical Chart Placeholder")
+//}
 
 
 
@@ -284,7 +300,7 @@ struct PortfView: View {
             }
             .padding()
         }
-        .padding(.horizontal, -20.0)
+
     }
     
 }
@@ -321,8 +337,8 @@ struct StockStatsView: View {
                 }
             }
         }
-        .padding(.horizontal, -20.0)
-        .frame(maxWidth: .infinity, alignment: .leading)
+      
+        
         
     }
 }
@@ -337,13 +353,7 @@ struct StockStatsView: View {
 struct CompanyInfoView: View {
     @EnvironmentObject var webService: WebService
     @State private var selectedPeer: String? = nil
-    //    let companyInfo = CompanyInfo(
-    //        ipoStartDate: webService.descData?.ipo ?? "",
-    //        industry: "Technology",
-    //        webpage: URL(string: "https://www.apple.com/")!,
-    //        companyPeers: ["AAPL", "DELL", "SMCI", "HPQ", "HPE"]
-    //    )
-//    let companyPeers = ["AAPL", "DELL", "SMCI", "HPQ", "HPE"]
+    
     
     var body: some View {
         VStack(alignment: .leading,spacing: 15) {
@@ -400,8 +410,8 @@ struct CompanyInfoView: View {
                     
                 }
             }
-        }.padding(.horizontal, -20.0)
-            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+           
     }
 }
     
@@ -455,7 +465,7 @@ struct InsiderSentimentsView: View {
             SentimentRow(category: "Negative", msprValue: webService.insiderSums.negativeMsprSum, changeValue: Double(webService.insiderSums.negativeChangeSum))
             Divider()
         }
-        .padding(.horizontal, -20.0)
+        
     }
 }
 
@@ -503,5 +513,6 @@ struct SentimentRow: View {
 #Preview {
     StockInfoView()
         .environmentObject(WebService.service)
+        .environmentObject(Watchlist())
 
 }

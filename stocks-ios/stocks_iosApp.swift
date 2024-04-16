@@ -13,6 +13,7 @@ struct stocks_iosApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(WebService.service)
+                .environmentObject(Watchlist())
             
         }
     }

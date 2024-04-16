@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recommendation Trends Chart</title>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+</head>
+<body>
+    <div id="recomChartContainer" style="height: 100%; width: 100%; margin: 0 auto;"></div>
+    <script>
+        // This function will be called from Swift with the JSON data
+        function loadDataForRecomChart(jsonData) {
+            // Parse the JSON data
+            try {
+                var dataRecom = JSON.parse(decodeURIComponent(jsonData));
+                    // Existing code to update Highcharts chart...
+                } catch (e) {
+                    console.error('Error parsing JSON data: ', e);
+                    // Handle errors, possibly show an error message in the chart container
+                }
+
+            // Prepare the data arrays
+            var recomPeriod = [];
+            var strongBuy = [];
+            var buy = [];
+            var hold = [];
+            var sell = [];
+            var strongSell = [];
+
+            // Populate the data arrays
+            dataRecom.forEach(function(item) {
+                recomPeriod.push(item.period.substring(0, 7));
+                strongBuy.push(item.strongBuy);
+                buy.push(item.buy);
+                hold.push(item.hold);
+                sell.push(item.sell);
+                strongSell.push(item.strongSell);
+            });
+
+            // Use Highcharts to create the chart
+            Highcharts.chart('recomChartContainer', {
+                chart: { type: 'column' },
+                title: { text: 'Recommendation Trends' },
+                xAxis: { categories: recomPeriod },
+                yAxis: {
+                    min: 0,
+                    title: { text: '# Analysis', align: 'high' },
+                    stackLabels: { enabled: true }
+                },
+                legend: {
+                    align: 'center',
+                    x: -24,
+                    y: 0,
+                    backgroundColor: 'white',
+                    shadow: false,
+                    itemStyle: { fontSize: '7px' },
+                },
+                plotOptions: {
+                    column: {
+                        stacking: 'normal',
+                        dataLabels: { enabled: true }
+                    }
+                },
+                series: [
+                    { name: 'Strong Buy', data: strongBuy, color: '#186F37' },
+                    { name: 'Buy', data: buy, color: '#1CB955' },
+                    { name: 'Hold', data: hold, color: '#B98B1D' },
+                    { name: 'Sell', data: sell, color: 'rgb(255,0,0)' },
+                    { name: 'Strong Sell', data: strongSell, color: '#803131' }
+                ]
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+</head>
+<body>
+    <div id="hourlyChartContainer" style="height: 100%; width: 100%;"></div>
+    <script>
+        // Function to populate the hourly chart
+        function loadHourlyChart(encodedJsonData) {
+            try {
+                var jsonData = decodeURIComponent(encodedJsonData);
+                var dataHourly = JSON.parse(jsonData);
+                var list1 = [];
+
+                dataHourly.results.forEach(function(item) {
+                    var tempList1 = [
+                        item.t, // Timestamp for the X axis
+                        item.c  // Closing price for the Y axis
+                    ];
+                    list1.push(tempList1);
+                });
+
+                Highcharts.chart('hourlyChartContainer', {
+                    chart: {
+                        type: 'line'
+                    },
+                    title: {
+                        text: dataHourly.ticker + ' Hourly Price Variation',
+                        style: {
+                            color: '#9e9e9f',
+                            fontSize: '15px'
+                        },
+                    },
+                    legend: {
+                        enabled: false
+                    },
+                    yAxis: [{
+                        title: {
+                            text: 'Price ($)'
+                        },
+                        opposite: true
+                    }],
+                    xAxis: {
+                        type: 'datetime',
+                        title: {
+                            text: 'Time'
+                        }
+                    },
+                    series: [{
+                        name: 'Hourly Price',
+                        data: list1,
+                        color: '#4b4b4b',  // Dark grey color for the line
+                        marker: {
+                            enabled: false
+                        }
+                    }],
+                    responsive: {
+                        rules: [{
+                            condition: {
+                                maxWidth: 500
+                            },
+                            chartOptions: {
+                                legend: {
+                                    layout: 'horizontal',
+                                    align: 'center',
+                                    verticalAlign: 'bottom'
+                                }
+                            }
+                        }]
+                    }
+                });
+            } catch (e) {
+                console.error('Error parsing JSON data: ', e);
+                document.getElementById('hourlyChartContainer').innerText = 'Error loading data.';
+            }
+        }
+    </script>
+</body>
+</html>

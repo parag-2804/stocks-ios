@@ -51,7 +51,7 @@ struct NewsView: View {
         VStack(alignment: .leading) {
             Text("News")
                 .font(.title2)
-                .padding()
+//
             
             ScrollView {
                 VStack {
@@ -70,12 +70,11 @@ struct NewsView: View {
                 NewsDetailsView(article: article)
             }
         }
-        .padding(.horizontal, -20.0)
+
         .onAppear {
-            print("NewsView appeared with \(webService.filteredNewsItems.count) items.")
+//            print("NewsView appeared with \(webService.filteredNewsItems.count) items.")
         }
-//        .background(Color.gray.opacity(0.3))
-//        .frame(maxWidth: .infinity, alignment: .leading)
+
     }
 }
 
@@ -114,29 +113,52 @@ struct NewsArticleRow: View {
         else
         {
            
-                HStack(){
-                    
-                    VStack(alignment: .leading, spacing: 10.0){
-                        Text(article.source + "  " + timeAgoSince(article.datetime))
-                            .font(.subheadline)
-                            .foregroundColor(.gray)
+//                HStack(){
+//                    
+//                    VStack(alignment: .leading, spacing: 10.0){
+//                        Text(article.source + "  " + timeAgoSince(article.datetime))
+//                            .font(.subheadline)
+//                            .foregroundColor(.gray)
+//                        
+//                        Text(article.headline)
+//                            .font(.headline)
+//                        
+//                    }
+//                    VStack(alignment: .trailing){
+//                        let imageUrl = URL(string: article.image)
+//                        KFImage(imageUrl)
+//                            .resizable()
+//                        //                        .scaledToFill()
+//                            .frame(width: 80.0, height: 80)
+//                            .clipped()
+//                            .cornerRadius(8)
+//                    }
+//                
+//                }
+//                .padding(.top, 20.0)
+            HStack {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text(article.source + "  " + timeAgoSince(article.datetime))
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+                            
+                            Text(article.headline)
+                                .font(.headline)
+                                .lineLimit(3) // Limit to 3 lines and truncate the rest
+                        }
                         
-                        Text(article.headline)
-                            .font(.headline)
+                        Spacer() // Use a spacer to push the image to the edge
                         
+                        if let imageUrl = URL(string: article.image), !article.image.isEmpty {
+                            KFImage(imageUrl)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill) // Maintain aspect ratio and fill the frame
+                                .frame(width: 80, height: 80)
+                                .clipped()
+                                .cornerRadius(8)
+                        }
                     }
-                    VStack(alignment: .trailing){
-                        let imageUrl = URL(string: article.image)
-                        KFImage(imageUrl)
-                            .resizable()
-                        //                        .scaledToFill()
-                            .frame(width: 80.0, height: 80)
-                            .clipped()
-                            .cornerRadius(8)
-                    }
-                
-                }
-                .padding(.top, 20.0)
+                    .padding(.vertical, 10)
             
         }
         
@@ -159,7 +181,7 @@ struct NewsArticleRow: View {
 //            Divider()
 //        }
 //        .padding(.vertical)
-////        .padding(.horizontal, -20.0)
+//        .padding(.horizontal, -20.0)
 //        .frame(maxWidth: .infinity, alignment: .leading)
 //        .listRowBackground(Color.clear) // Set individual row background to transparent
 //        .background(Color.clear) // Another way to set the entire background to transparent
@@ -194,6 +216,8 @@ struct NewsArticleRow: View {
 }
 
 struct NewsDetailsView: View {
+    
+   
     @EnvironmentObject var webService: WebService
     let article: NewsItem
     @Environment(\.presentationMode) var presentationMode
@@ -226,15 +250,27 @@ struct NewsDetailsView: View {
                         .font(.headline)
                         .foregroundColor(.blue)
                     
-                    HStack {
-                        SocialButton(iconName: "square.and.arrow.up", label: "Twitter", action: {
-                            // Implement share to Twitter
+                    HStack(spacing: 10.0) {
+                        Button(action: {
                             openURL(URL(string: "https://twitter.com/intent/tweet?text=\(article.headline)&url=\(article.url)")!)
-                        })
-                        SocialButton(iconName: "f.square", label: "Facebook", action: {
-                            // Implement share to Facebook
+                            
+                        }){
+                            Image ("twitter")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 40, height: 40)
+                        }
+                        
+                        Button(action: {
                             openURL(URL(string: "https://www.facebook.com/sharer/sharer.php?u=\(article.url)")!)
-                        })
+                            
+                        }){
+                            Image ("facebook")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 40, height: 40)
+                        }
+                     
                     }
                 }
             }
@@ -255,17 +291,17 @@ struct NewsDetailsView: View {
     }
 }
 
-struct SocialButton: View {
-    let iconName: String
-    let label: String
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            Label(label, systemImage: iconName)
-        }
-    }
-}
+//struct SocialButton: View {
+//    let iconName: String
+//    let label: String
+//    let action: () -> Void
+//    
+//    var body: some View {
+//        Button(action: action) {
+//            Label(label, systemImage: iconName)
+//        }
+//    }
+//}
 
 struct NewsView_Previews: PreviewProvider {
     static var previews: some View {
