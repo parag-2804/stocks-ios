@@ -14,6 +14,7 @@ struct stocks_iosApp: App {
             ContentView()
                 .environmentObject(WebService.service)
                 .environmentObject(Watchlist())
+                .environmentObject(PortfolioViewModel())
             
         }
     }

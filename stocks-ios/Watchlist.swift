@@ -141,8 +141,56 @@ class Watchlist: ObservableObject {
         }
         task.resume()
     }
-    
-    
+    func deleteStockFromWatchlist(symbol: String) {
+        // Construct the URL for the delete request with the symbol as a query parameter
+        var components = URLComponents(url: mongobaseUrl.appendingPathComponent("watchlist"), resolvingAgainstBaseURL: true)
+        components?.queryItems = [
+            URLQueryItem(name: "symbol", value: symbol)
+        ]
+
+        guard let url = components?.url else {
+            print("Error: Cannot create URL for deletion")
+            return
+        }
+
+        // Create the request
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+
+        // Perform the request
+        let task = URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            guard let self = self else {
+                print("Error: Self was deallocated during network request")
+                return
+            }
+
+            if let error = error {
+                print("Error: Network request failed: \(error.localizedDescription)")
+                return
+            }
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                print("Error: Did not receive a valid HTTP response")
+                return
+            }
+
+            switch httpResponse.statusCode {
+            case 200...299:
+                print("Successfully removed stock: \(symbol)")
+                // Remove the stock from the local array if the server reported success
+                DispatchQueue.main.async {
+                    self.stocks.removeAll { $0.symbol == symbol }
+                }
+            case 404:
+                print("Error: Symbol not found in watchlist")
+            default:
+                // Handle other statuses appropriately
+                print("Error: Received status code \(httpResponse.statusCode)")
+            }
+        }
+        task.resume()
+    }
+
     
     
     
@@ -151,58 +199,14 @@ class Watchlist: ObservableObject {
     
     
 }
-//
-//struct favView: View {
-//    @EnvironmentObject var viewModel: Watchlist
-//    @EnvironmentObject var webService: WebService
-//    var body: some View {
-//        VStack(alignment: .leading, spacing: 15) {
-//            ForEach(viewModel.stocks) { stock in
-//                NavigationLink(destination: StockInfoView().onAppear {
-//                    SharedData.shared.ticker = stock.symbol
-//                    webService.fetchAPI()// Update the ticker when the view appears
-//                }){
-//                    HStack {
-//                        VStack(alignment: .leading) {
-//                            Text(stock.symbol)
-//                                .font(.headline)
-//                            Text(stock.company)
-//                                .font(.subheadline)
-//                                .foregroundColor(.secondary)
-//                        }
-//                        
-//                        Spacer()
-//                        
-//                        VStack(alignment: .trailing) {
-//                            Text(String(format: "$%.2f", stock.price ?? 0))
-//                                .font(.headline)
-//                            HStack(spacing: 4) {
-//                                Image(systemName: (stock.change ?? 0) < 0 ? "arrow.down.right" : "arrow.up.right")
-//                                    .foregroundColor((stock.change ?? 0) < 0 ? .red : .green)
-//                                Text(String(format: "%.2f (%.2f%%)", stock.change ?? 0, stock.changePercentage ?? 0))
-//                                    .foregroundColor((stock.change ?? 0) < 0 ? .red : .green)
-//                            }
-//                            .font(.subheadline)
-//                        }
-//                    }
-//
-//                }
-//            }
-//        }
-//    }
-//}
+
 struct favView: View {
     @EnvironmentObject var viewModel: Watchlist
-    @EnvironmentObject var webService: WebService
-    @State private var isActive = false
-    @State private var selectedStock: StockItem?
-
+    @Binding var editMode: EditMode
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: 15) {
             ForEach(viewModel.stocks) { stock in
-                NavigationLink(destination: StockInfoView().onAppear {
-                    self.setUpNavigation(for: stock)
-                }, isActive: $isActive) {
+                NavigationLink(destination: StockInfoView(ticker: stock.symbol)) {
                     HStack {
                         VStack(alignment: .leading) {
                             Text(stock.symbol)
@@ -211,46 +215,54 @@ struct favView: View {
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                         }
-                        
                         Spacer()
-                        
                         VStack(alignment: .trailing) {
                             Text(String(format: "$%.2f", stock.price ?? 0))
                                 .font(.headline)
                             HStack(spacing: 4) {
-                                Image(systemName: (stock.change ?? 0) < 0 ? "arrow.down.right" : "arrow.up.right")
+                                Image(systemName: (stock.change ?? 0) < 0 ? "arrow.down.right" : (stock.change ?? 0 > 0 ) ? "arrow.up.right" : "minus")
                                     .foregroundColor((stock.change ?? 0) < 0 ? .red : .green)
                                 Text(String(format: "%.2f (%.2f%%)", stock.change ?? 0, stock.changePercentage ?? 0))
-                                    .foregroundColor((stock.change ?? 0) < 0 ? .red : .green)
+                                    .foregroundColor((stock.change ?? 0) < 0 ? .red : (stock.change ?? 0) > 0 ? .green : .gray)
                             }
                             .font(.subheadline)
                         }
                     }
                 }
-                .simultaneousGesture(TapGesture().onEnded {
-                    self.selectedStock = stock
-                    self.isActive = true  // Set isActive to true to trigger navigation
-                })
             }
-        }
+            .onDelete { indices in
+                deleteItems(at: indices)
+            }
+            .onMove { (source: IndexSet, destination: Int) in
+                viewModel.stocks.move(fromOffsets: source, toOffset: destination)
+                // If you want to maintain the order on the server as well,
+                // send update to the server here.
+            }
+        
+        .environment(\.editMode, $editMode)// Pass editMode down
+//        .onAppear {
+//            viewModel.fetchWatchlist()
+//        }
     }
 
-    private func setUpNavigation(for stock: StockItem) {
-        SharedData.shared.ticker = stock.symbol
-        webService.fetchAPI()
+    private func deleteItems(at offsets: IndexSet) {
+        offsets.forEach { index in
+            let stockSymbol = viewModel.stocks[index].symbol
+            viewModel.deleteStockFromWatchlist(symbol: stockSymbol)
+        }
+        viewModel.stocks.remove(atOffsets: offsets)
     }
 }
 
 
-
-
+//
 //
 //struct favView: View {
 //    @EnvironmentObject var viewModel: Watchlist
-//
+//    var ticker: String
 //    var body: some View {
 //        ForEach(viewModel.stocks) { stock in
-//            NavigationLink(destination: StockInfoView()) {
+//            NavigationLink(destination: StockInfoView(ticker: stock.symbol)) {
 //                HStack {
 //                    VStack(alignment: .leading) {
 //                        Text(stock.symbol)
@@ -273,28 +285,34 @@ struct favView: View {
 //                    }
 //                }
 //            }
-//            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-//                Button(role: .destructive) {
-//                    if let index = viewModel.stocks.firstIndex(where: { $0.id == stock.id }) {
-//                        viewModel.stocks.remove(at: index)
-//                    }
-//                } label: {
-//                    Label("Delete", systemImage: "trash")
-//                }
-//            }
-//            .swipeActions(edge: .leading, allowsFullSwipe: true) {
-//                Button {
-//                    // Here you would normally handle some action.
-//                    // For reordering, SwiftUI provides the Edit mode with onMove.
-//                } label: {
-//                    Label("Change", systemImage: "pencil")
-//                }
-//            }
+////            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+////                Button(role: .destructive) {
+////                    if let index = viewModel.stocks.firstIndex(where: { $0.id == stock.id }) {
+////                        viewModel.stocks.remove(at: index)
+////                        
+////                    }
+////                } label: {
+////                    Label("Delete", systemImage: "trash")
+////                }
+////            }
+////            .swipeActions(edge: .leading, allowsFullSwipe: true) {
+////                Button {
+////                    // Here you would normally handle some action.
+////                    // For reordering, SwiftUI provides the Edit mode with onMove.
+////                } label: {
+////                    Label("Change", systemImage: "pencil")
+////                }
+////            }
+//            
+//            
+//            
+//            
+//            
 //        }
 //        
-//        .onAppear {
-//                    viewModel.fetchWatchlist()
-//                }
+////        .onAppear {
+////                    viewModel.fetchWatchlist()
+////                }
 //    }
 //}
 

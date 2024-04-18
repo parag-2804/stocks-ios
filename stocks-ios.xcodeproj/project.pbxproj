@@ -26,6 +26,7 @@
 		2B8CB5A32BCC97E500A807A0 /* HourlyChart.html in Resources */ = {isa = PBXBuildFile; fileRef = 2B8CB5A22BCC97E500A807A0 /* HourlyChart.html */; };
 		2B8CB5A52BCCB61A00A807A0 /* HistoricalChart.html in Resources */ = {isa = PBXBuildFile; fileRef = 2B8CB5A42BCCB61A00A807A0 /* HistoricalChart.html */; };
 		2B8CB5A92BCDE0A600A807A0 /* Watchlist.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B8CB5A82BCDE0A600A807A0 /* Watchlist.swift */; };
+		2B8CB5AB2BD04DB100A807A0 /* Portfolio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B8CB5AA2BD04DB100A807A0 /* Portfolio.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -68,6 +69,7 @@
 		2B8CB5A22BCC97E500A807A0 /* HourlyChart.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; path = HourlyChart.html; sourceTree = "<group>"; };
 		2B8CB5A42BCCB61A00A807A0 /* HistoricalChart.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; path = HistoricalChart.html; sourceTree = "<group>"; };
 		2B8CB5A82BCDE0A600A807A0 /* Watchlist.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Watchlist.swift; sourceTree = "<group>"; };
+		2B8CB5AA2BD04DB100A807A0 /* Portfolio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Portfolio.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -125,6 +127,7 @@
 				2B8CB5952BC16FB000A807A0 /* Webservice.swift */,
 				2B8CB5662BBE44D900A807A0 /* ContentView.swift */,
 				2B8CB5912BBF601300A807A0 /* StockInfoView.swift */,
+				2B8CB5AA2BD04DB100A807A0 /* Portfolio.swift */,
 				2B8CB5972BC732E700A807A0 /* NewsView.swift */,
 				2B8CB59C2BCA243C00A807A0 /* ChartsView.swift */,
 				2B8CB5A82BCDE0A600A807A0 /* Watchlist.swift */,
@@ -308,6 +311,7 @@
 				2B8CB59D2BCA243C00A807A0 /* ChartsView.swift in Sources */,
 				2B8CB5942BBFA74300A807A0 /* Utility.swift in Sources */,
 				2B8CB5922BBF601300A807A0 /* StockInfoView.swift in Sources */,
+				2B8CB5AB2BD04DB100A807A0 /* Portfolio.swift in Sources */,
 				2B8CB5672BBE44D900A807A0 /* ContentView.swift in Sources */,
 				2B8CB5982BC732E700A807A0 /* NewsView.swift in Sources */,
 				2B8CB5A92BCDE0A600A807A0 /* Watchlist.swift in Sources */,

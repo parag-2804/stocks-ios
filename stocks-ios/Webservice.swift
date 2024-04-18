@@ -14,12 +14,12 @@ import WebKit
 
 struct companyDescData: Identifiable, Decodable {
     let id: UUID = UUID()
-    let finnhubIndustry: String
-    let ipo: String
-    let logo: String
-    let name: String
-    let ticker: String
-    let weburl: String
+    var finnhubIndustry: String = ""
+    var ipo: String = ""
+    var logo: String = ""
+    var name: String = ""
+    var ticker: String = ""
+    var weburl: String = ""
     
     enum CodingKeys: String, CodingKey {
         case finnhubIndustry, ipo, logo, name, ticker, weburl
@@ -28,14 +28,14 @@ struct companyDescData: Identifiable, Decodable {
 }
 
 struct StockPrice: Decodable {
-    let currentPrice: Double
-    let Change: Double
-    let PercentChange: Double
-    let high: Double
-    let low: Double
-    let open: Double
-    let previousClose: Double
-    let timestamp: Int
+    var currentPrice: Double = 0
+    var Change: Double = 0
+    var PercentChange: Double = 0
+    var high: Double = 0
+    var low: Double = 0
+    var open: Double = 0
+    var previousClose: Double = 0
+    var timestamp: Int = 0
 
     enum CodingKeys: String, CodingKey {
         case currentPrice = "c"
@@ -50,15 +50,73 @@ struct StockPrice: Decodable {
 }
 
 struct NewsItem: Decodable, Identifiable {
-    let id: Int
-    let category: String
-    let datetime: TimeInterval
-    let headline: String
-    let image: String
-    let related: String
-    let source: String
-    let summary: String
-    let url: String
+    var id: Int
+    var category: String
+    var datetime: TimeInterval
+    var headline: String
+    var image: String
+    var related: String
+    var source: String
+    var summary: String
+    var url: String
+}
+
+
+
+struct AutocompleteResponse: Decodable {
+    let count: Int
+    let result: [AutocompleteResult]
+}
+
+struct AutocompleteResult: Decodable {
+    var description: String
+    var displaySymbol: String
+    var symbol: String
+    let type: String?
+    let primary: [String]?
+    
+    enum CodingKeys: String, CodingKey {
+        case description, displaySymbol, symbol, type, primary
+    }
+}
+
+struct FilteredAutoResult:Identifiable,Hashable{
+    let id: UUID = UUID()
+    let description: String
+    let displaySymbol: String
+}
+
+
+
+
+struct insiderResponse: Decodable {
+    var data: [insiderData] = []
+    let symbol: String
+    
+    // Function to calculate the sums
+    func calculateSums() -> (positiveChange: Int, negativeChange: Int, positiveMspr: Double, negativeMspr: Double) {
+        let positiveChange = data.filter { $0.change > 0 }.reduce(0) { $0 + $1.change }
+        let negativeChange = data.filter { $0.change < 0 }.reduce(0) { $0 + $1.change }
+        let positiveMspr = data.filter { $0.mspr > 0 }.reduce(0.0) { $0 + $1.mspr }
+        let negativeMspr = data.filter { $0.mspr < 0 }.reduce(0.0) { $0 + $1.mspr }
+        
+        return (positiveChange, negativeChange, positiveMspr, negativeMspr)
+    }
+}
+
+struct insiderData: Decodable {
+    let symbol: String
+    let year: Int
+    let month: Int
+    let change: Int
+    let mspr: Double
+}
+
+struct InsiderSums {
+    var positiveChangeSum: Int = 0
+    var negativeChangeSum: Int = 0
+    var positiveMsprSum: Double = 0.0
+    var negativeMsprSum: Double = 0.0
 }
 
 class WebService: ObservableObject {
@@ -68,8 +126,8 @@ class WebService: ObservableObject {
     @Published var autocompleteSuggestions: [FilteredAutoResult] = []
     private var debounceWorkItem: DispatchWorkItem?
     private let debounceInterval: TimeInterval = 0.5
-    @Published var descData: companyDescData?
-    @Published var stockData: StockPrice?
+    @Published var descData: companyDescData = companyDescData()
+    @Published var stockData: StockPrice = StockPrice()
     @Published var peers: [String] = []
     @Published var insiderSums = InsiderSums()
 //    typealias Recommendations = [Recommendation]
@@ -80,8 +138,8 @@ class WebService: ObservableObject {
     @Published var HourlyChartDataJson: String?
     @Published var HistoricalChartDataJson: String?
     
-    func fetchAPI() {
-        getCompanyDesc { result in
+    func fetchAPI(ticker: String) {
+        getCompanyDesc(ticker: ticker) { result in
             switch result {
             case .success(let companyDesc):
                     self.descData = companyDesc
@@ -98,7 +156,7 @@ class WebService: ObservableObject {
             // together for further processing.
         }
 
-        getStockPrice { result in
+        getStockPrice (ticker: ticker){ result in
             switch result {
             case .success(let stockPrice):
                 self.stockData = stockPrice
@@ -109,7 +167,7 @@ class WebService: ObservableObject {
                 print("Error fetching stock price: \(error)")
             }
         }
-        getCompanyPeers { result in
+        getCompanyPeers (ticker: ticker){ result in
             switch result {
             case .success(let companyP):
                
@@ -120,7 +178,7 @@ class WebService: ObservableObject {
                 print("Error fetching peers: \(error)")
             }
         }
-        getinsiderSent { result in
+        getinsiderSent(ticker: ticker) { result in
                 DispatchQueue.main.async {
                     switch result {
                     case .success(let insiderResponse):
@@ -129,7 +187,7 @@ class WebService: ObservableObject {
                         self.insiderSums.negativeChangeSum = sums.negativeChange
                         self.insiderSums.positiveMsprSum = sums.positiveMspr
                         self.insiderSums.negativeMsprSum = sums.negativeMspr
-//                        print("Insider Data Success: \(sums)")
+                        print("Insider Data Success: \(sums)")
                     case .failure(let error):
                         print("Error fetching insider sentiment data: \(error)")
                     }
@@ -147,7 +205,7 @@ class WebService: ObservableObject {
 //                    }
 //                }
         
-        getNewsData { [weak self] result in
+        getNewsData (ticker: ticker){ [weak self] result in
                 DispatchQueue.main.async {
                     switch result {
                     case .success(let newsItems):
@@ -165,10 +223,10 @@ class WebService: ObservableObject {
             }
             
         
-        fetchRecommendationChartData()
-        fetchEPSChartData()
-//        fetchHourlyChartData()
-//        fetchHistoricalChartData()
+        fetchRecommendationChartData(ticker: ticker)
+        fetchEPSChartData(ticker: ticker)
+//        fetchHourlyChartData(ticker: ticker)
+//        fetchHistoricalChartData(ticker: ticker)
         
     }
         
@@ -194,37 +252,34 @@ class WebService: ObservableObject {
     }
     
     
-    
-    func getCompanyDesc(completion: @escaping (Result<companyDescData, Error>) -> Void) {
-        let url = baseUrl.appendingPathComponent("companyDesc/\(SharedData.shared.ticker)")
+    func getCompanyDesc(ticker: String, completion: @escaping (Result<companyDescData, Error>) -> Void) {
+        let url = baseUrl.appendingPathComponent("companyDesc/\(ticker)")
         fetchData(url: url, completion: completion)
     }
-    
-    func getStockPrice(completion: @escaping (Result<StockPrice, Error>) -> Void) {
-        let url = baseUrl.appendingPathComponent("stockPrice/\(SharedData.shared.ticker)")
-        fetchData(url: url, completion: completion)
-    }
-    
-    func getCompanyPeers(completion: @escaping (Result<[String], Error>) -> Void) {
-        let url = baseUrl.appendingPathComponent("companyPeers/\(SharedData.shared.ticker)")
-        fetchData(url: url, completion: completion)
-    }
-    
-    func getinsiderSent(completion: @escaping (Result<insiderResponse, Error>) -> Void) {
-        let url = baseUrl.appendingPathComponent("insiderSentiment/\(SharedData.shared.ticker)")
-        fetchData(url: url, completion: completion)
-    }
-    
 
-    
-    func getNewsData(completion: @escaping (Result<[NewsItem], Error>) -> Void) {
-        let url = baseUrl.appendingPathComponent("companyNews/\(SharedData.shared.ticker)")
+    func getStockPrice(ticker: String, completion: @escaping (Result<StockPrice, Error>) -> Void) {
+        let url = baseUrl.appendingPathComponent("stockPrice/\(ticker)")
+        fetchData(url: url, completion: completion)
+    }
+
+    func getCompanyPeers(ticker: String, completion: @escaping (Result<[String], Error>) -> Void) {
+        let url = baseUrl.appendingPathComponent("companyPeers/\(ticker)")
+        fetchData(url: url, completion: completion)
+    }
+
+    func getinsiderSent(ticker: String, completion: @escaping (Result<insiderResponse, Error>) -> Void) {
+        let url = baseUrl.appendingPathComponent("insiderSentiment/\(ticker)")
+        fetchData(url: url, completion: completion)
+    }
+
+    func getNewsData(ticker: String, completion: @escaping (Result<[NewsItem], Error>) -> Void) {
+        let url = baseUrl.appendingPathComponent("companyNews/\(ticker)")
         fetchData(url: url, completion: completion)
     }
     
     
-    func fetchRecommendationChartData() {
-        let urlString = "http://localhost:8080/recommendation/\(SharedData.shared.ticker)"
+    func fetchRecommendationChartData(ticker: String) {
+        let urlString = "http://localhost:8080/recommendation/\(ticker)"
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
             return
@@ -260,8 +315,8 @@ class WebService: ObservableObject {
         task.resume()
     }
     
-    func fetchEPSChartData() {
-        let urlString = "http://localhost:8080/companyEarnings/\(SharedData.shared.ticker)"
+    func fetchEPSChartData(ticker: String) {
+        let urlString = "http://localhost:8080/companyEarnings/\(ticker)"
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
             return
@@ -297,8 +352,8 @@ class WebService: ObservableObject {
         task.resume()
     }
     
-    func fetchHourlyChartData() {
-        let urlString = "http://localhost:8080/companyHourly/\(SharedData.shared.ticker)"
+    func fetchHourlyChartData(ticker: String) {
+        let urlString = "http://localhost:8080/companyHourly/\(ticker)"
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
             return
@@ -334,8 +389,8 @@ class WebService: ObservableObject {
         task.resume()
     }
     
-    func fetchHistoricalChartData() {
-        let urlString = "http://localhost:8080/historicalChart/\(SharedData.shared.ticker)"
+    func fetchHistoricalChartData(ticker: String) {
+        let urlString = "http://localhost:8080/historicalChart/\(ticker)"
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
             return
@@ -443,62 +498,6 @@ class WebService: ObservableObject {
     
     
     // Example structs for parsing JSON responses (you need to adjust these according to your actual JSON structure)
-    
-    struct AutocompleteResponse: Decodable {
-        let count: Int
-        let result: [AutocompleteResult]
-    }
-    
-    struct AutocompleteResult: Decodable {
-        let description: String
-        let displaySymbol: String
-        let symbol: String
-        let type: String?
-        let primary: [String]?
-        
-        enum CodingKeys: String, CodingKey {
-            case description, displaySymbol, symbol, type, primary
-        }
-    }
-    
-    struct FilteredAutoResult:Identifiable,Hashable{
-        let id: UUID = UUID()
-        let description: String
-        let displaySymbol: String
-    }
-    
-    
-    
-    
-    struct insiderResponse: Decodable {
-        let data: [insiderData]
-        let symbol: String
-        
-        // Function to calculate the sums
-        func calculateSums() -> (positiveChange: Int, negativeChange: Int, positiveMspr: Double, negativeMspr: Double) {
-            let positiveChange = data.filter { $0.change > 0 }.reduce(0) { $0 + $1.change }
-            let negativeChange = data.filter { $0.change < 0 }.reduce(0) { $0 + $1.change }
-            let positiveMspr = data.filter { $0.mspr > 0 }.reduce(0.0) { $0 + $1.mspr }
-            let negativeMspr = data.filter { $0.mspr < 0 }.reduce(0.0) { $0 + $1.mspr }
-            
-            return (positiveChange, negativeChange, positiveMspr, negativeMspr)
-        }
-    }
-
-    struct insiderData: Decodable {
-        let symbol: String
-        let year: Int
-        let month: Int
-        let change: Int
-        let mspr: Double
-    }
-    
-    struct InsiderSums {
-        var positiveChangeSum: Int = 0
-        var negativeChangeSum: Int = 0
-        var positiveMsprSum: Double = 0.0
-        var negativeMsprSum: Double = 0.0
-    }
     
 //    struct Recommendation: Codable {
 //        let buy: Int

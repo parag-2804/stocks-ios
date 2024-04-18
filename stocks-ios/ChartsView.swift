@@ -165,6 +165,7 @@ struct HourlyChartView: View {
     }
     
 }
+
 struct HistoricalChartView: View {
     @EnvironmentObject var webService: WebService
     @State private var javascriptString: String? = nil

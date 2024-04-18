@@ -14,7 +14,7 @@ struct StockInfoView: View {
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var webService: WebService
     @EnvironmentObject var viewModel: Watchlist
-   
+    var ticker: String
     @State var selectedChart: ChartType = .hourly
     @State var isAddedtoFav = false
        
@@ -52,13 +52,13 @@ struct StockInfoView: View {
                       
                     
                     
-                    PortfView()
+                    PortfView(ticker: ticker)
                       
                     
                     StockStatsView()
                       
                     
-                    CompanyInfoView()
+                    CompanyInfoView(ticker: ticker)
                      
                     
                     InsiderSentimentsView()
@@ -87,12 +87,12 @@ struct StockInfoView: View {
             .padding(.horizontal, 15.0)
             
             
-            .navigationBarTitle(SharedData.shared.ticker)
+            .navigationBarTitle(ticker)
             .toolbar {
                 // Plus button which might perform some action
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
-                        viewModel.addStockToWatchlist(symbol: SharedData.shared.ticker, companyName: webService.descData?.name ?? "XYZ")
+                        viewModel.addStockToWatchlist(symbol: ticker, companyName: webService.descData.name)
                         isAddedtoFav.toggle()
                         
                         
@@ -102,12 +102,16 @@ struct StockInfoView: View {
                     }
                 }
             }
-            
+            .onAppear {
+                        /*webService.fetchAPI(ticker: ticker)
+                         */  // Fetching data when the view appears
+                webService.fetchAPI(ticker: ticker)
+                    }
         }
       
     }
     
-    
+  
     
 }
 
@@ -121,11 +125,11 @@ struct stockheadView: View{
             
             HStack{
                 
-                Text(webService.descData?.name ?? "Loading")
+                Text(webService.descData.name)
                     .font(.subheadline)
                     .foregroundColor(Color.gray)
                 Spacer()
-                let imageUrl = URL(string: webService.descData?.logo ?? " ")
+                let imageUrl = URL(string: webService.descData.logo)
                     KFImage(imageUrl)
                         .resizable()
                         .scaledToFill()
@@ -138,20 +142,18 @@ struct stockheadView: View{
             
             HStack(){
                 
-                Text(Utility.formatCurrency(webService.stockData?.currentPrice ?? 0))
+                Text(Utility.formatCurrency(webService.stockData.currentPrice))
                     .font(.title)
                     .fontWeight(.semibold)
 //                Spacer()
                 ZStack{
                     
-                    HStack{
-                        
-                        Image(systemName: (webService.stockData?.Change ?? 0 > 0.01 ? "arrow.up.forward" : (webService.stockData?.Change ?? 0 < 0.01 ? "arrow.down.forward" : "minus")))
-                        Text(Utility.formatCurrency(webService.stockData?.Change ?? 0))
-                        
-                        
-                        Text("(\(Utility.formatVal(webService.stockData?.PercentChange ?? 0))%)")
-                    }.foregroundColor(webService.stockData?.Change ?? 0 > 0.01 ? .green : (webService.stockData?.Change ?? 0 < 0.01 ? .red : .gray))
+                    HStack {
+                        Image(systemName: webService.stockData.Change > 0 ? "arrow.up.forward" : (webService.stockData.Change < 0 ? "arrow.down.forward" : "minus"))
+                        Text(Utility.formatCurrency(webService.stockData.Change))
+                        Text("(\(Utility.formatVal(webService.stockData.PercentChange))%)")
+                    }.foregroundColor(webService.stockData.Change > 0 ? .green : (webService.stockData.Change < 0 ? .red : .gray))
+
                 }
                 
             }
@@ -237,7 +239,7 @@ struct PortfView: View {
     @State var avgCostPerShare: Double = 0.0
     @State var totalCost: Double = 0.0
     @State var marketValue: Double = 0.0
-    
+    var ticker: String
     var body: some View {
         
         HStack(spacing: 45.0) {
@@ -279,7 +281,7 @@ struct PortfView: View {
                     }
                 } else {
                     VStack(alignment: .leading){
-                        Text("You have 0 shares of \(SharedData.shared.ticker)")
+                        Text("You have 0 shares of \(ticker)")
                         Text("Start trading!")
                             
                     }
@@ -325,15 +327,15 @@ struct StockStatsView: View {
             
             HStack {
                 VStack(alignment: .leading) {
-                    Text("High Price: $\(webService.stockData?.high ?? 0, specifier: "%.2f")")
-                    Text("Low Price: $\(webService.stockData?.low ?? 0, specifier: "%.2f")")
+                    Text("High Price: $\(webService.stockData.high, specifier: "%.2f")")
+                    Text("Low Price: $\(webService.stockData.low, specifier: "%.2f")")
                 }
                 
                 Spacer()
                 
                 VStack(alignment: .leading) {
-                    Text("Open Price: $\(webService.stockData?.open ?? 0, specifier: "%.2f")")
-                    Text("Prev. Close: $\(webService.stockData?.previousClose ?? 0, specifier: "%.2f")")
+                    Text("Open Price: $\(webService.stockData.open, specifier: "%.2f")")
+                    Text("Prev. Close: $\(webService.stockData.previousClose, specifier: "%.2f")")
                 }
             }
         }
@@ -353,7 +355,7 @@ struct StockStatsView: View {
 struct CompanyInfoView: View {
     @EnvironmentObject var webService: WebService
     @State private var selectedPeer: String? = nil
-    
+    @State var ticker: String
     
     var body: some View {
         VStack(alignment: .leading,spacing: 15) {
@@ -366,20 +368,21 @@ struct CompanyInfoView: View {
                 HStack {
                     Text("IPO Start Date:")
                     Spacer()
-                    Text(webService.descData?.ipo ?? "Loading")
+                    Text(webService.descData.ipo)
                 }
                 
                 HStack {
                     Text("Industry:")
                     Spacer()
-                    Text(webService.descData?.finnhubIndustry ?? "Loading")
+                    Text(webService.descData.finnhubIndustry)
                 }
                 
                 HStack {
                     Text("Webpage:")
                     Spacer()
-                    if let urlString = webService.descData?.weburl, let url = URL(string: urlString) {
-                        Link(webService.descData?.weburl ?? "Website", destination: url)
+                    let urlString = webService.descData.weburl
+                        if let url = URL(string: urlString) {
+                        Link(webService.descData.weburl, destination: url)
                     } else {
                         // Handle case where URL is not valid or missing
                         Text("Loading")
@@ -396,13 +399,13 @@ struct CompanyInfoView: View {
                                 Text(peer)
                                     .foregroundColor(.blue) // Set the text color to blue for a link-like appearance
                                     .onTapGesture {
-                                    SharedData.shared.ticker = peer // Update the shared ticker
-                                    webService.fetchAPI()
+                                        ticker = peer // Update the shared ticker
+                                        webService.fetchAPI(ticker: ticker)
                                     self.selectedPeer = peer // Trigger navigation
                                 }
                                 
                                 // Invisible NavigationLink for navigation
-                                .background(NavigationLink("", destination: StockInfoView(), isActive: .constant(peer == selectedPeer ?? "Loading")).hidden())
+                                    .background(NavigationLink("", destination: StockInfoView(ticker: ticker), isActive: .constant(peer == selectedPeer ?? "Loading")).hidden())
                             }
                         }
                     }
@@ -509,10 +512,10 @@ struct SentimentRow: View {
 //        
 //}
 
-
-#Preview {
-    StockInfoView()
-        .environmentObject(WebService.service)
-        .environmentObject(Watchlist())
-
-}
+//
+//#Preview {
+//    StockInfoView(ticker: ticker)
+//        .environmentObject(WebService.service)
+//        .environmentObject(Watchlist())
+//
+//}
