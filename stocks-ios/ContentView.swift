@@ -49,6 +49,8 @@ struct ContentView: View {
                                         ForEach(stocks) { stock in
                                             PortfolioRowView(stock: stock)
                                         }
+                                        
+                                    
                                     } else {
                                         Text("No stocks in portfolio.")
                                     }

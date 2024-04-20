@@ -187,7 +187,7 @@ class WebService: ObservableObject {
                         self.insiderSums.negativeChangeSum = sums.negativeChange
                         self.insiderSums.positiveMsprSum = sums.positiveMspr
                         self.insiderSums.negativeMsprSum = sums.negativeMspr
-                        print("Insider Data Success: \(sums)")
+//                        print("Insider Data Success: \(sums)")
                     case .failure(let error):
                         print("Error fetching insider sentiment data: \(error)")
                     }

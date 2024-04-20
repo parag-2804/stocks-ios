@@ -72,7 +72,7 @@ class Watchlist: ObservableObject {
                     // After all the data has been fetched
                     dispatchGroup.notify(queue: .main) {
                         self.stocks = initialStockItems
-                        print("Fetched stocks with additional details: \(self.stocks)")
+//                        print("Fetched stocks with additional details: \(self.stocks)")
                     }
                 } else {
                     print("No data from watchlist")
@@ -107,31 +107,68 @@ class Watchlist: ObservableObject {
     }
     
     
+//    func addStockToWatchlist(symbol: String, companyName: String) {
+//        // Assuming you want to use the same base URL that is used for fetching the watchlist
+//        let url = mongobaseUrl.appendingPathComponent("watchlist")
+//
+//        // Prepare the JSON payload
+//        let body: [String: Any] = ["Symbol": symbol, "CompanyName": companyName]
+//        guard let jsonData = try? JSONSerialization.data(withJSONObject: body) else {
+//            print("Error: Cannot create JSON from stock data")
+//            return
+//        }
+//
+//        // Create the request
+//        var request = URLRequest(url: url)
+//        request.httpMethod = "POST"
+//        request.httpBody = jsonData
+//        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+//
+//        // Perform the request
+//        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+//            guard let data = data, error == nil else {
+//                print("Error: Network request failed: \(error?.localizedDescription ?? "unknown error")")
+//                return
+//            }
+//            do {
+//                // Handle the response or parse JSON
+//                if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+//                    print("Response: \(json)")
+//                }
+//            } catch {
+//                print("Error: Failed to parse JSON response")
+//            }
+//        }
+//        task.resume()
+//    }
+//    
+//
     func addStockToWatchlist(symbol: String, companyName: String) {
-        // Assuming you want to use the same base URL that is used for fetching the watchlist
         let url = mongobaseUrl.appendingPathComponent("watchlist")
 
-        // Prepare the JSON payload
-        let body: [String: Any] = ["Symbol": symbol, "CompanyName": companyName]
+        // Create the dictionary using the exact field names expected by the server.
+        let body = ["Symbol": symbol, "CompanyName": companyName]
         guard let jsonData = try? JSONSerialization.data(withJSONObject: body) else {
             print("Error: Cannot create JSON from stock data")
             return
         }
-
-        // Create the request
+        print("ADD WATCHLIST FUNC CALLED  \(jsonData)", body)
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.httpBody = jsonData
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        // Perform the request
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             guard let data = data, error == nil else {
                 print("Error: Network request failed: \(error?.localizedDescription ?? "unknown error")")
                 return
             }
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
+                print("Error: Server returned status code \(httpResponse.statusCode)")
+            }
+
             do {
-                // Handle the response or parse JSON
+                // Attempt to decode the server response as a JSON object.
                 if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
                     print("Response: \(json)")
                 }
@@ -141,6 +178,7 @@ class Watchlist: ObservableObject {
         }
         task.resume()
     }
+    
     func deleteStockFromWatchlist(symbol: String) {
         // Construct the URL for the delete request with the symbol as a query parameter
         var components = URLComponents(url: mongobaseUrl.appendingPathComponent("watchlist"), resolvingAgainstBaseURL: true)

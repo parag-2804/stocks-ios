@@ -16,6 +16,8 @@ struct StockInfoView: View {
     @EnvironmentObject var viewModel: Watchlist
     var ticker: String
     @State var selectedChart: ChartType = .hourly
+    
+    
     @State var isAddedtoFav = false
        
     enum ChartType {
@@ -27,7 +29,7 @@ struct StockInfoView: View {
             
             ScrollView{
                 
-                VStack(alignment: .leading, spacing: 15.0){
+                VStack(alignment: .leading, spacing: 20.0){
                     
                     stockheadView()
                         
@@ -92,8 +94,13 @@ struct StockInfoView: View {
                 // Plus button which might perform some action
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
-                        viewModel.addStockToWatchlist(symbol: ticker, companyName: webService.descData.name)
-                        isAddedtoFav.toggle()
+                        if isAddedtoFav {
+                                        // If the stock is already added, delete it from the watchlist
+                                        viewModel.deleteStockFromWatchlist(symbol: ticker)
+                                    } else {
+                                        viewModel.addStockToWatchlist(symbol: ticker, companyName: webService.descData.name)
+                                    }
+                                    isAddedtoFav.toggle()
                         
                         
                     }) {
@@ -105,6 +112,7 @@ struct StockInfoView: View {
             .onAppear {
                         /*webService.fetchAPI(ticker: ticker)
                          */  // Fetching data when the view appears
+                isAddedtoFav = viewModel.stocks.contains { $0.symbol == ticker }
                 webService.fetchAPI(ticker: ticker)
                     }
         }
@@ -234,12 +242,39 @@ struct VerticalLabelStyle: LabelStyle {
 
 
 struct PortfView: View {
-    @State var stockOwned: Bool = false
-    @State var sharesOwned: Int = 0
-    @State var avgCostPerShare: Double = 0.0
-    @State var totalCost: Double = 0.0
-    @State var marketValue: Double = 0.0
+    
+    @EnvironmentObject var portfolioViewModel: PortfolioViewModel
+    
+    @State private var showTradeSheet = false
     var ticker: String
+    
+    private var stockDetails: Stock? {
+            portfolioViewModel.portfolioData?.stocklist.first(where: { $0.symbol == ticker })
+        }
+        
+        private var stockOwned: Bool {
+            stockDetails != nil && stockDetails?.quantity ?? 0 > 0
+        }
+        
+        private var sharesOwned: Int {
+            stockDetails?.quantity ?? 0
+        }
+        
+        private var avgCostPerShare: Double {
+            stockDetails?.buyPrice ?? 0
+        }
+        
+        private var totalCost: Double {
+            avgCostPerShare * Double(sharesOwned)
+        }
+        
+        private var marketValue: Double {
+            stockDetails?.marketValue ?? 0
+        }
+        
+        private var changeInValue: Double {
+            stockDetails?.changeInPrice ?? 0
+        }
     var body: some View {
         
         HStack(spacing: 45.0) {
@@ -271,12 +306,13 @@ struct PortfView: View {
                             Spacer()
                             // Assuming you calculate the change elsewhere and set it
                             Text("$\(marketValue - totalCost, specifier: "%.2f")")
-                                .foregroundColor(marketValue - totalCost < 0 ? .red : .green)
+                                .foregroundColor(marketValue - totalCost < 0 ? .red : marketValue - totalCost > 0 ? .green : .gray)
                         }
                         HStack {
                             Text("Market Value:")
                             Spacer()
                             Text("$\(marketValue, specifier: "%.2f")")
+                                .foregroundColor(marketValue - totalCost < 0 ? .red : marketValue - totalCost > 0 ? .green : .gray)
                         }
                     }
                 } else {
@@ -291,6 +327,9 @@ struct PortfView: View {
             }
             
             Button(action: {
+                
+                self.showTradeSheet = true
+                
                 // Actions to perform when trade button is pressed
             }) {
                 Text("Trade")
@@ -301,18 +340,109 @@ struct PortfView: View {
                     .cornerRadius(30)
             }
             .padding()
+            .sheet(isPresented: $showTradeSheet) {
+                TradeSheetView( isPresented: $showTradeSheet, ticker: ticker)
+                    }
         }
 
     }
     
 }
 
-//struct StockStats {
-//    var highPrice: Double
-//    var openPrice: Double
-//    var lowPrice: Double
-//    var previousClose: Double
-//}
+struct TradeSheetView: View {
+    
+    @EnvironmentObject var portfolioViewModel: PortfolioViewModel
+    @EnvironmentObject var webService: WebService
+    @Binding var isPresented: Bool
+    @State private var numberOfShares: String = ""
+    var ticker: String
+    
+    
+    private var stockDetails: Stock? {
+            portfolioViewModel.portfolioData?.stocklist.first(where: { $0.symbol == ticker })
+        }
+    
+    private var totalCost: Double {
+            (Double(numberOfShares) ?? 0) * webService.stockData.currentPrice
+        }
+//    var availableFunds: Double = 22260.53 // Example funds available
+    /*var sharePrice: Double = 171.09*/ // Example price per share
+    
+    var body: some View {
+        
+            VStack {
+                HStack {
+                    Spacer()
+                    Button(action: {
+                        self.isPresented = false
+                    }) {
+                        Image(systemName: "xmark")
+                    }
+                    .padding()
+                }
+                
+                Text("Trade \(webService.descData.name) shares")
+                    .font(.headline)
+                    .fontWeight(.bold)
+                Spacer()
+                HStack(){
+                    TextField("0", text: $numberOfShares)
+                       
+                        .keyboardType(.numberPad)
+                        .font(.system(size: 100))
+                       
+//                        .multilineTextAlignment(.center)
+                        .onChange(of: numberOfShares) { _ in
+                            
+                            // Handle changes to the text field if necessary
+                        }
+
+                    
+                    Text((Int(numberOfShares) == 1 || Int(numberOfShares) == 0 ? "Share" : "Shares"))
+                        .font(.title)
+                }
+                .padding(.horizontal, 15.0)
+                HStack{
+                    Spacer()
+                    Text("× $\(webService.stockData.currentPrice, specifier: "%.2f")/share = $\(totalCost,specifier: "%.2f")")
+                        .padding()
+                }
+                Spacer()
+                Text("$\(portfolioViewModel.portfolioData?.balance ?? 0, specifier: "%.2f") available to buy \(ticker)")
+                    .font(.footnote)
+                    .foregroundColor(Color.gray)
+                
+                HStack {
+                    Button(action: {
+                        
+                        // Handle buy action
+                    }) {
+                        Text("Buy")
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(Color.green)
+                            .foregroundColor(.white)
+                            .cornerRadius(30)
+                    }
+                    
+                    Button(action: {
+                         
+                        // Handle sell action
+                        
+                    }) {
+                        Text("Sell")
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(Color.green)
+                            .foregroundColor(.white)
+                            .cornerRadius(30)
+                    }
+                }
+                .padding()
+            }
+        
+    }
+}
 
 
 
@@ -507,15 +637,18 @@ struct SentimentRow: View {
 
 
 //#Preview{
-//   InsiderSentimentsView()
+//    TradeSheetView(isPresented : true, ticker: "AAPL")
 //        .environmentObject(WebService.service)
 //        
 //}
 
 //
-//#Preview {
-//    StockInfoView(ticker: ticker)
-//        .environmentObject(WebService.service)
-//        .environmentObject(Watchlist())
+#Preview {
+    StockInfoView(ticker: "AAPL")
+        .environmentObject(WebService.service)
+        .environmentObject(Watchlist())
+        .environmentObject(PortfolioViewModel())
+    
+}
 //
 //}
