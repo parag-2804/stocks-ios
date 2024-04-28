@@ -35,6 +35,10 @@ struct Stock: Identifiable, Codable {
         guard let latestQuote = latestQuote else { return 0 }
         return ((latestQuote - buyPrice) / buyPrice) * 100
     }
+    
+    var changeinPort: Double {
+        return (marketValue - (buyPrice*Double(quantity)))
+    }
 
     enum CodingKeys: String, CodingKey {
         case symbol = "Symbol"
@@ -80,14 +84,14 @@ struct LatestStockPrice: Codable {
 
 class PortfolioViewModel: ObservableObject {
     @Published var portfolioData: PortfolioData?
-
+    
     private let portfolioURL = URL(string: "http://localhost:3001/api/portfolio")!
-
+    
     // Initialize ViewModel and fetch portfolio
-//    init() {
-//        fetchPortfolio()
-//    }
-
+    //    init() {
+    //        fetchPortfolio()
+    //    }
+    
     // Fetch portfolio from the backend API
     func fetchPortfolio() {
         URLSession.shared.dataTask(with: portfolioURL) { [weak self] data, response, error in
@@ -106,11 +110,11 @@ class PortfolioViewModel: ObservableObject {
             }
         }.resume()
     }
-
+    
     // Fetch the latest stock quotes for each stock symbol
     func fetchLatestStockQuotes() {
         guard var stocks = portfolioData?.stocklist else { return }
-
+        
         for i in stocks.indices {
             getStockPrice(for: stocks[i].symbol) { [weak self] result in
                 DispatchQueue.main.async {
@@ -128,8 +132,8 @@ class PortfolioViewModel: ObservableObject {
             }
         }
     }
-
-
+    
+    
     // Function to fetch the latest stock price from your API
     func getStockPrice(for symbol: String, completion: @escaping (Result<LatestStockPrice, Error>) -> Void) {
         let stockPriceURL = URL(string: "http://localhost:8080/stockPrice/\(symbol)")!
@@ -147,8 +151,113 @@ class PortfolioViewModel: ObservableObject {
             }
         }.resume()
     }
-}
+    
+    
+    
+    func buyStock(symbol: String, name: String, quantity: Int, buyPrice: Double, stockPresent: Bool, balance: Double) {
+        guard let url = URL(string: "http://localhost:3001/api/portfolio/buyStock") else {
+            print("Invalid URL")
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "PATCH"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let body: [String: Any] = [
+            "symbol": symbol,
+            "name": name,
+            "quantity": quantity,
+            "buyPrice": buyPrice,
+            "stockPresent": stockPresent,
+            "balance": balance
+        ]
+        
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("Error: \(error.localizedDescription)")
+                return
+            }
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                print("Error: Invalid response")
+                return
+            }
+            
+            guard httpResponse.statusCode == 200, let jsonData = data else {
+                print("Error: Server returned status code \(httpResponse.statusCode)")
+                return
+            }
+            
+            do {
+                if let json = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
+                   let message = json["message"] as? String {
+                    print("Server Response: \(message)")
+                } else {
+                    print("Error: Unexpected server response format")
+                }
+            } catch {
+                print("Error: Failed to parse JSON response")
+            }
+        }.resume()
+    }
 
+
+
+
+    func sellStock(symbol: String, quantity: Int, newPrice: Double, balance: Double) {
+    guard let url = URL(string: "http://localhost:3001/api/portfolio/updateStock") else {
+        print("Invalid URL")
+        return
+    }
+    
+    var request = URLRequest(url: url)
+    request.httpMethod = "PATCH"
+    request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+    
+    let body: [String: Any] = [
+        "stockSymbol": symbol,
+        
+        "newQuantity": quantity,
+        
+        "newBuyPrice" : newPrice,
+        
+        "newBalance": balance
+    ]
+    
+    request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+    
+    URLSession.shared.dataTask(with: request) { data, response, error in
+        if let error = error {
+            print("Error: \(error.localizedDescription)")
+            return
+        }
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            print("Error: Invalid response")
+            return
+        }
+        
+        guard httpResponse.statusCode == 200, let jsonData = data else {
+            print("Error: Server returned status code \(httpResponse.statusCode)")
+            return
+        }
+        
+        do {
+            if let json = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
+               let message = json["message"] as? String {
+                print("Server Response: \(message)")
+            } else {
+                print("Error: Unexpected server response format")
+            }
+        } catch {
+            print("Error: Failed to parse JSON response")
+        }
+    }.resume()
+}
+}
 
 struct PortfolioView: View {
     @EnvironmentObject var portfolioViewModel: PortfolioViewModel
@@ -162,7 +271,7 @@ struct PortfolioView: View {
                         .font(.title3)
                     Text(String(format: "$%.2f", portfolioViewModel.portfolioData?.netWorth ?? 0))
                         .font(.title2)
-                        .fontWeight(.semibold)
+                        .fontWeight(.bold)
                 }
 
                 Spacer()
@@ -172,10 +281,21 @@ struct PortfolioView: View {
                         .font(.title3)
                     Text(String(format: "$%.2f", portfolioViewModel.portfolioData?.balance ?? 0))
                         .font(.title2)
-                        .fontWeight(.semibold)
+                        .fontWeight(.bold)
                 }
             }
             .padding(.vertical)
+        }
+        
+        if let stocks = portfolioViewModel.portfolioData?.stocklist, !stocks.isEmpty {
+            ForEach(stocks) { stock in
+                PortfolioRowView(stock: stock)
+            }
+            .onMove(perform: { (source: IndexSet, destination: Int) in
+                portfolioViewModel.portfolioData?.stocklist.move(fromOffsets: source, toOffset: destination)
+            })
+            
+            
         }
         // Now, instead of using a ForEach to create the list of stocks, the rows will be created in the parent List.
     }
@@ -191,6 +311,7 @@ struct PortfolioRowView: View {
                 VStack(alignment: .leading) {
                     Text(stock.symbol)
                         .font(.headline)
+                        .fontWeight(.bold)
                     Text("\(stock.quantity) shares")
                         .font(.subheadline)
                 }
@@ -200,12 +321,13 @@ struct PortfolioRowView: View {
                 VStack(alignment: .trailing) {
                     Text(String(format: "$%.2f", stock.marketValue))
                         .font(.headline)
+                        .fontWeight(.bold)
                     
-                    HStack(spacing: 4) {
-                        Image(systemName: stock.changeInPrice > 0.01 ? "arrow.up.right" : stock.changeInPrice < 0.01 ? "arrow.down.right" : "minus")
-                            .foregroundColor(stock.changeInPrice > 0.01 ? .green : stock.changeInPrice < 0.01 ? .red : .gray)
+                    HStack(spacing: 25) {
+                        Image(systemName: stock.changeInPrice > 0 ? "arrow.up.right" : stock.changeInPrice < 0 ? "arrow.down.right" : "minus")
+                            .foregroundColor(stock.changeInPrice > 0 ? .green : stock.changeInPrice < 0 ? .red : .gray)
                         Text(String(format: "$%.2f (%.2f%%)", stock.changeInPrice, stock.changeInPricePercentage))
-                            .foregroundColor(stock.changeInPrice > 0.01 ? .green : stock.changeInPrice < 0.01 ? .red : .gray)
+                            .foregroundColor(stock.changeInPrice > 0 ? .green : stock.changeInPrice < 0 ? .red : .gray)
                             .font(.subheadline)
                     }
                 }

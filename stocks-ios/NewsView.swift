@@ -241,15 +241,20 @@ struct NewsDetailsView: View {
                     Text(formatDate(article.datetime))
                         .font(.subheadline)
                         .foregroundColor(.gray)
+                    Divider()
                     Text(article.headline)
                         .font(.title2)
                         .fontWeight(.bold)
                     Text(article.summary)
                         .font(.body)
-                    Link("Read More", destination: URL(string: article.url)!)
-                        .font(.headline)
-                        .foregroundColor(.blue)
-                    
+                    HStack{
+                        Text("For more details click ")
+                            .font(.subheadline)
+                            .foregroundColor(Color.gray)
+                        Link("here", destination: URL(string: article.url)!)
+                            .font(.subheadline)
+                            .foregroundColor(.blue)
+                    }
                     HStack(spacing: 10.0) {
                         Button(action: {
                             openURL(URL(string: "https://twitter.com/intent/tweet?text=\(article.headline)&url=\(article.url)")!)
@@ -258,7 +263,7 @@ struct NewsDetailsView: View {
                             Image ("twitter")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: 40, height: 40)
+                                .frame(width: 50, height: 50)
                         }
                         
                         Button(action: {
@@ -268,7 +273,7 @@ struct NewsDetailsView: View {
                             Image ("facebook")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: 40, height: 40)
+                                .frame(width: 50, height: 50)
                         }
                      
                     }

@@ -6,6 +6,7 @@ import Foundation
 import WebKit
 import SwiftUI
 
+
 struct MongoDBStockItem: Decodable {
     let symbol: String
     let company: String
@@ -249,6 +250,7 @@ struct favView: View {
                         VStack(alignment: .leading) {
                             Text(stock.symbol)
                                 .font(.headline)
+                                .fontWeight(.bold)
                             Text(stock.company)
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
@@ -257,7 +259,8 @@ struct favView: View {
                         VStack(alignment: .trailing) {
                             Text(String(format: "$%.2f", stock.price ?? 0))
                                 .font(.headline)
-                            HStack(spacing: 4) {
+                                .fontWeight(.bold)
+                            HStack(spacing: 25) {
                                 Image(systemName: (stock.change ?? 0) < 0 ? "arrow.down.right" : (stock.change ?? 0 > 0 ) ? "arrow.up.right" : "minus")
                                     .foregroundColor((stock.change ?? 0) < 0 ? .red : .green)
                                 Text(String(format: "%.2f (%.2f%%)", stock.change ?? 0, stock.changePercentage ?? 0))

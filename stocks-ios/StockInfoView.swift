@@ -16,6 +16,7 @@ struct StockInfoView: View {
     @EnvironmentObject var viewModel: Watchlist
     var ticker: String
     @State var selectedChart: ChartType = .hourly
+    @EnvironmentObject var portfolioViewModel: PortfolioViewModel
     
     
     @State var isAddedtoFav = false
@@ -110,6 +111,7 @@ struct StockInfoView: View {
                 }
             }
             .onAppear {
+                portfolioViewModel.fetchPortfolio()
                         /*webService.fetchAPI(ticker: ticker)
                          */  // Fetching data when the view appears
                 isAddedtoFav = viewModel.stocks.contains { $0.symbol == ticker }
@@ -250,6 +252,7 @@ struct PortfView: View {
     
     private var stockDetails: Stock? {
             portfolioViewModel.portfolioData?.stocklist.first(where: { $0.symbol == ticker })
+        
         }
         
         private var stockOwned: Bool {
@@ -282,27 +285,32 @@ struct PortfView: View {
             VStack(alignment: .leading, spacing: 15.0){
                 Text("Portfolio")
                     .font(.title2)
+                    
                 //                .padding()
                 
                 if stockOwned {
                     VStack {
                         HStack {
                             Text("Shares Owned:")
+                                .fontWeight(.semibold)
                             Spacer()
                             Text("\(sharesOwned)")
                         }
                         HStack {
                             Text("Avg. Cost / Share:")
+                                .fontWeight(.semibold)
                             Spacer()
                             Text("$\(avgCostPerShare, specifier: "%.2f")")
                         }
                         HStack {
                             Text("Total Cost:")
+                                .fontWeight(.semibold)
                             Spacer()
                             Text("$\(totalCost, specifier: "%.2f")")
                         }
                         HStack {
                             Text("Change:")
+                                .fontWeight(.semibold)
                             Spacer()
                             // Assuming you calculate the change elsewhere and set it
                             Text("$\(marketValue - totalCost, specifier: "%.2f")")
@@ -310,11 +318,13 @@ struct PortfView: View {
                         }
                         HStack {
                             Text("Market Value:")
+                                .fontWeight(.semibold)
                             Spacer()
                             Text("$\(marketValue, specifier: "%.2f")")
                                 .foregroundColor(marketValue - totalCost < 0 ? .red : marketValue - totalCost > 0 ? .green : .gray)
                         }
                     }
+                    
                 } else {
                     VStack(alignment: .leading){
                         Text("You have 0 shares of \(ticker)")
@@ -329,6 +339,7 @@ struct PortfView: View {
             Button(action: {
                 
                 self.showTradeSheet = true
+//                portfolioViewModel.fetchPortfolio()
                 
                 // Actions to perform when trade button is pressed
             }) {
@@ -349,27 +360,241 @@ struct PortfView: View {
     
 }
 
+struct Toast: ViewModifier {
+    let message: String
+    @Binding var isShowing: Bool
+
+    func body(content: Content) -> some View {
+        ZStack(alignment: .bottom) {
+            content
+            if isShowing {
+                Text(message)
+                    .font(.title2)
+                    .foregroundColor(.white)
+                    .padding()
+                    .background(Color.gray)
+                    .cornerRadius(40)
+                    .transition(AnyTransition.opacity.animation(.easeInOut(duration: 0.3)))
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                            withAnimation {
+                                self.isShowing = false
+                            }
+                        }
+                    }
+                .zIndex(1)
+            }
+        }
+    }
+}
+
+extension View {
+    func toast(message: String, isShowing: Binding<Bool>) -> some View {
+        self.modifier(Toast(message: message, isShowing: isShowing))
+    }
+}
+
+
+
+//struct SuccessView: View {
+//    let tradeType: TradeType
+//    let numberOfShares: Int
+//    let stockSymbol: String
+//    var body: some View {
+//        VStack {
+//            Text("Congratulations!")
+//                .font(.largeTitle)
+//                .fontWeight(.bold)
+//                .padding()
+//
+//            Text("You have successfully \(tradeType == .buy ? "bought" : "sold") \(numberOfShares) \(numberOfShares == 1 ? "share" : "shares") of \(stockSymbol).")
+//                .font(.title3)
+//                .padding()
+//
+//            Button("Done") {
+//                
+//                // Handle the dismissal action here
+//            }
+//            .padding()
+//            .frame(maxWidth: .infinity)
+//            .background(Color.white)
+//            .foregroundColor(Color.green)
+//            .cornerRadius(20)
+//        }
+//        .frame(width: 300, height: 200)
+//        .background(Color.green)
+//        .cornerRadius(20)
+//        .foregroundColor(.white)
+//    }
+//    
+//    enum TradeType {
+//        case buy, sell
+//    }
+//}
+struct SuccessView: View {
+    var tradeType: TradeType
+    let numberOfShares: Int
+    let stockSymbol: String
+    var dismissAction: () -> Void
+
+    enum TradeType {
+        case buy, sell
+    }
+
+    var body: some View {
+        ZStack {
+            // Use green color for the full background
+            Color.green.edgesIgnoringSafeArea(.all)
+
+            // Use VStack for the message and button
+            VStack(spacing: 15) {
+                Spacer()
+                
+                Text("Congratulations!")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+
+                Text("You have successfully \(tradeType == .buy ? "bought" : "sold") \(numberOfShares) \(numberOfShares == 1 ? "share" : "shares") of \(stockSymbol).")
+                    .font(.body)
+                    .foregroundColor(.white)
+//                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 5.0)
+
+                Spacer()
+                
+                Button(action: dismissAction) {
+                    Text("Done")
+                        .font(.headline)
+                        .foregroundColor(.green)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(Color.white)
+                        .cornerRadius(30)
+                }
+                .padding()
+            }
+        }
+    }
+}
+
+
+
 struct TradeSheetView: View {
     
     @EnvironmentObject var portfolioViewModel: PortfolioViewModel
     @EnvironmentObject var webService: WebService
     @Binding var isPresented: Bool
+    
     @State private var numberOfShares: String = ""
     var ticker: String
-    
-    
+    @State private var showToast: Bool = false
+    @State private var toastMessage: String = ""
+    @State private var showSuccessPopup = false
+    @State var tradeType: SuccessView.TradeType = .buy
+   
     private var stockDetails: Stock? {
             portfolioViewModel.portfolioData?.stocklist.first(where: { $0.symbol == ticker })
         }
     
+    private var stockOwned: Bool {
+        stockDetails != nil && stockDetails?.quantity ?? 0 > 0
+    }
+    
+    private var sharesOwned: Int {
+        stockDetails?.quantity ?? 0
+    }
+//    private var currentBuyPrice: Double {
+//        stockDetails?.latestQuote ?? 0
+//    }
+    private var currentBuyPrice: Double {
+        stockDetails?.latestQuote ?? 0 != 0 ? stockDetails?.latestQuote ?? 0 : webService.stockData.currentPrice
+    }
+    
     private var totalCost: Double {
-            (Double(numberOfShares) ?? 0) * webService.stockData.currentPrice
+            (Double(numberOfShares) ?? 0) * currentBuyPrice
         }
+    
+    
+    private func executeBuyTrade() {
+        if(Int(numberOfShares) == nil)
+        {
+               toastMessage = "Please enter a valid amount"
+               showToast  = true
+               return
+        }
+        
+        else if(Int(numberOfShares) ?? 0 < 1){
+               toastMessage = "Cannot buy non-positive shares"
+               showToast = true
+                return
+            }
+        
+            let availableFunds = portfolioViewModel.portfolioData?.balance ?? 0
+            if totalCost > availableFunds {
+                toastMessage = "Not enough money to buy"
+                showToast = true
+               
+                return
+            }
+        
+        else{
+            
+            portfolioViewModel.buyStock(symbol: ticker, name: webService.descData.name, quantity: sharesOwned + (Int(numberOfShares) ?? 0), buyPrice: currentBuyPrice, stockPresent: stockOwned, balance: Double((availableFunds - totalCost)))
+//            tradeType = .buy
+            showSuccessPopup = true
+//            self.isPresented = false
+//            portfolioViewModel.fetchPortfolio()
+            
+            //Show Congratulations View for tradetype = .buy
+        }
+        
+        
+}
+
+    
+    private func executeSellTrade() {
+        if(Int(numberOfShares) == nil)
+        {
+                       toastMessage = "Please enter a valid amount"
+                       showToast  = true
+                       return
+        }
+        
+        else if(Int(numberOfShares) ?? 0 < 1){
+               toastMessage = "Cannot sell non-positive shares"
+               showToast = true
+                return
+            }
+
+        
+        if Int(numberOfShares) ?? 0 > sharesOwned {
+                toastMessage = "Not enough shares to sell"
+                showToast = true
+                
+                return
+            }
+        
+        else{
+            print("Updated Balance: \(portfolioViewModel.portfolioData?.balance ?? 0 + totalCost)")
+            portfolioViewModel.sellStock(symbol: ticker,quantity: (sharesOwned - (Int(numberOfShares) ?? 0)), newPrice: currentBuyPrice, balance: ((portfolioViewModel.portfolioData?.balance ?? 0 ) + totalCost))
+            
+//            tradeType = .sell
+            showSuccessPopup = true
+//            self.isPresented = false
+//            portfolioViewModel.fetchPortfolio()
+            
+            //Show Congratulations View
+        }
+        
+        
+}
+    
 //    var availableFunds: Double = 22260.53 // Example funds available
     /*var sharePrice: Double = 171.09*/ // Example price per share
     
     var body: some View {
-        
+        NavigationView{
             VStack {
                 HStack {
                     Spacer()
@@ -387,16 +612,17 @@ struct TradeSheetView: View {
                 Spacer()
                 HStack(){
                     TextField("0", text: $numberOfShares)
-                       
+                    
                         .keyboardType(.numberPad)
                         .font(.system(size: 100))
-                       
-//                        .multilineTextAlignment(.center)
+                    
+                    //                        .multilineTextAlignment(.center)
                         .onChange(of: numberOfShares) { _ in
+                        
                             
-                            // Handle changes to the text field if necessary
+                            //                            portfolioViewModel.fetchPortfolio()
                         }
-
+                    
                     
                     Text((Int(numberOfShares) == 1 || Int(numberOfShares) == 0 ? "Share" : "Shares"))
                         .font(.title)
@@ -415,7 +641,12 @@ struct TradeSheetView: View {
                 HStack {
                     Button(action: {
                         
-                        // Handle buy action
+//                        tradeType = .buy
+                        
+                        tradeType = .buy
+                        executeBuyTrade()
+                        //                        self.isPresented = false
+                        
                     }) {
                         Text("Buy")
                             .padding()
@@ -426,8 +657,9 @@ struct TradeSheetView: View {
                     }
                     
                     Button(action: {
-                         
-                        // Handle sell action
+                        tradeType = .sell
+                        executeSellTrade()
+                        //                        self.isPresented = false
                         
                     }) {
                         Text("Sell")
@@ -440,7 +672,20 @@ struct TradeSheetView: View {
                 }
                 .padding()
             }
+        }
         
+        .toast(message: toastMessage ,isShowing: $showToast)
+        .sheet(isPresented: $showSuccessPopup){
+        //        .sheet(isPresented: $showSuccessPopup)
+        
+            SuccessView(tradeType: tradeType, numberOfShares: Int(numberOfShares) ?? 0, stockSymbol: ticker, dismissAction: {
+                // This closure will be called when the "Done" button is tapped
+                self.isPresented = false
+                showSuccessPopup = false
+                
+            })
+        }
+    
     }
 }
 
@@ -457,15 +702,35 @@ struct StockStatsView: View {
             
             HStack {
                 VStack(alignment: .leading) {
-                    Text("High Price: $\(webService.stockData.high, specifier: "%.2f")")
-                    Text("Low Price: $\(webService.stockData.low, specifier: "%.2f")")
+                    HStack{
+                        Text("High Price: ")
+                            .fontWeight(.semibold)
+                        Text("$\(webService.stockData.high, specifier: "%.2f")")
+                    }
+//                      .fontWeight(.semibold)
+                    
+                    HStack{
+                        Text("Low Price: ")
+                            .fontWeight(.semibold)
+                        Text("$\(webService.stockData.low, specifier: "%.2f")")
+                    }
                 }
                 
                 Spacer()
                 
                 VStack(alignment: .leading) {
-                    Text("Open Price: $\(webService.stockData.open, specifier: "%.2f")")
-                    Text("Prev. Close: $\(webService.stockData.previousClose, specifier: "%.2f")")
+                    
+                    HStack{
+                        
+                        Text("Open Price: ")
+                            .fontWeight(.semibold)
+                        Text("$\(webService.stockData.open, specifier: "%.2f")")
+                    }
+                    HStack{
+                        Text("Prev. Close: ")
+                            .fontWeight(.semibold)
+                        Text("$\(webService.stockData.previousClose, specifier: "%.2f")")
+                    }
                 }
             }
         }
@@ -488,6 +753,8 @@ struct CompanyInfoView: View {
     @State var ticker: String
     
     var body: some View {
+        
+        
         VStack(alignment: .leading,spacing: 15) {
             Text("About")
                 .font(.title2)
@@ -497,18 +764,21 @@ struct CompanyInfoView: View {
                 
                 HStack {
                     Text("IPO Start Date:")
+                        .fontWeight(.semibold)
                     Spacer()
                     Text(webService.descData.ipo)
                 }
                 
                 HStack {
                     Text("Industry:")
+                        .fontWeight(.semibold)
                     Spacer()
                     Text(webService.descData.finnhubIndustry)
                 }
                 
                 HStack {
                     Text("Webpage:")
+                        .fontWeight(.semibold)
                     Spacer()
                     let urlString = webService.descData.weburl
                         if let url = URL(string: urlString) {
@@ -521,6 +791,7 @@ struct CompanyInfoView: View {
                 
                 HStack {
                     Text("Company Peers:")
+                        .fontWeight(.semibold)
                     Spacer()
                     Spacer()
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -536,6 +807,7 @@ struct CompanyInfoView: View {
                                 
                                 // Invisible NavigationLink for navigation
                                     .background(NavigationLink("", destination: StockInfoView(ticker: ticker), isActive: .constant(peer == selectedPeer ?? "Loading")).hidden())
+                                
                             }
                         }
                     }
@@ -563,6 +835,7 @@ struct InsiderSentiments {
     var mspr: SentimentValues
     var change: SentimentValues
 }
+
 struct InsiderSentimentsView: View {
     @EnvironmentObject var webService: WebService
     
@@ -643,12 +916,12 @@ struct SentimentRow: View {
 //}
 
 //
-#Preview {
-    StockInfoView(ticker: "AAPL")
-        .environmentObject(WebService.service)
-        .environmentObject(Watchlist())
-        .environmentObject(PortfolioViewModel())
-    
-}
+//#Preview {
+//    StockInfoView(ticker: "AAPL")
+//        .environmentObject(WebService.service)
+//        .environmentObject(Watchlist())
+//        .environmentObject(PortfolioViewModel())
+//    
+//}
 //
 //}

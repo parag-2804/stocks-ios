@@ -45,16 +45,23 @@ struct ContentView: View {
                                     PortfolioView()
 
                                     // Display the stock rows here so that they inherit the list's properties.
-                                    if let stocks = portfolioViewModel.portfolioData?.stocklist, !stocks.isEmpty {
-                                        ForEach(stocks) { stock in
-                                            PortfolioRowView(stock: stock)
-                                        }
-                                        
-                                    
-                                    } else {
-                                        Text("No stocks in portfolio.")
-                                    }
-                                }
+//                        if let stocks = portfolioViewModel.portfolioData?.stocklist, !stocks.isEmpty {
+//                            ForEach(stocks) { stock in
+//                                PortfolioRowView(stock: stock)
+//                            }
+//                            .onMove(perform: { (source: IndexSet, destination: Int) in
+//                                portfolioViewModel.portfolioData?.stocklist.move(fromOffsets: source, toOffset: destination)
+//                            })
+//                            
+//                            
+//                        }
+//                                     else {
+//                                        Text("No stocks in portfolio.")
+//                                    }
+                        
+                    }.onAppear {
+                        portfolioViewModel.fetchPortfolio()
+                    }
                                
                     
                     Section(header: Text("Favourites")){

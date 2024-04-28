@@ -212,7 +212,7 @@ class WebService: ObservableObject {
                         // Filter news items to include only those with a non-empty image link
                         // and then take only the first 10 items
                         let filteredWithImages = newsItems.filter { !$0.image.isEmpty }
-                        self?.filteredNewsItems = Array(filteredWithImages.prefix(10))
+                        self?.filteredNewsItems = Array(filteredWithImages.prefix(15))
 //                        print("Filtered News Items: \(self?.filteredNewsItems.count ?? 0)")
                     case .failure(let error):
                         // Handle error
