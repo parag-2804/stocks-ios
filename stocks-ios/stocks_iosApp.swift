@@ -11,6 +11,7 @@ import SwiftUI
 struct stocks_iosApp: App {
     var body: some Scene {
         WindowGroup {
+           
             ContentView()
                 .environmentObject(WebService.service)
                 .environmentObject(Watchlist())

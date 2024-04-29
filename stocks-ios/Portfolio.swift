@@ -93,7 +93,7 @@ class PortfolioViewModel: ObservableObject {
     //    }
     
     // Fetch portfolio from the backend API
-    func fetchPortfolio() {
+    func fetchPortfolio(completion: @escaping () -> Void = {}) {
         URLSession.shared.dataTask(with: portfolioURL) { [weak self] data, response, error in
             if let data = data, error == nil {
                 do {

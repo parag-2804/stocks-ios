@@ -20,13 +20,14 @@ import UIKit
 
 
 struct ContentView: View {
-    @State var isEditMode: EditMode = .inactive
+//    @State var isEditMode: EditMode = .inactive
     @State private var query: String = ""
 //    @StateObject var webService = WebService()
     @EnvironmentObject var webService: WebService
     @EnvironmentObject var viewModel: Watchlist
     @EnvironmentObject var portfolioViewModel: PortfolioViewModel
-    
+    @State var isWatchlistLoaded: Bool = false
+    @State var isPortLoaded: Bool = false
     @State var ticker: String = ""
     
     // State to manage the selected suggestion
@@ -65,7 +66,7 @@ struct ContentView: View {
                                
                     
                     Section(header: Text("Favourites")){
-                        favView(editMode: $isEditMode)
+                        favView()
                     } .onAppear {
                         viewModel.fetchWatchlist()
                     }
@@ -95,7 +96,7 @@ struct ContentView: View {
             .navigationBarTitle("Stocks")
             .toolbar{
                 EditButton()
-                    .environment(\.editMode, $isEditMode)
+//                    .environment(\.editMode, $isEditMode)
             }
 //            .navigationBarItems(trailing: editButton)
             .searchable(text: $query, prompt: "Search")
@@ -111,6 +112,8 @@ struct ContentView: View {
         .onAppear {
                     viewModel.fetchWatchlist()
                     portfolioViewModel.fetchPortfolio()
+            
+            
                        }
         
     }

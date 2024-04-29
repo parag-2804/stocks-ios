@@ -41,7 +41,7 @@ class Watchlist: ObservableObject {
     private let mongobaseUrl = URL(string: "http://localhost:3001/api/")!
     private let BaseUrl = URL(string: "http://localhost:8080/")!
 
-    func fetchWatchlist() {
+    func fetchWatchlist(completion: @escaping () -> Void = {}) {
         let watchlistUrl = mongobaseUrl.appendingPathComponent("watchlist")
 
         URLSession.shared.dataTask(with: watchlistUrl) { [weak self] (data, response, error) in
@@ -231,17 +231,14 @@ class Watchlist: ObservableObject {
     }
 
     
-    
-    
-    
-    
-    
-    
 }
+
+
+
 
 struct favView: View {
     @EnvironmentObject var viewModel: Watchlist
-    @Binding var editMode: EditMode
+//    @Binding var editMode: EditMode
     
     var body: some View {
             ForEach(viewModel.stocks) { stock in
@@ -263,7 +260,7 @@ struct favView: View {
                             HStack(spacing: 25) {
                                 Image(systemName: (stock.change ?? 0) < 0 ? "arrow.down.right" : (stock.change ?? 0 > 0 ) ? "arrow.up.right" : "minus")
                                     .foregroundColor((stock.change ?? 0) < 0 ? .red : .green)
-                                Text(String(format: "%.2f (%.2f%%)", stock.change ?? 0, stock.changePercentage ?? 0))
+                                Text(String(format: "$%.2f (%.2f%%)", stock.change ?? 0, stock.changePercentage ?? 0))
                                     .foregroundColor((stock.change ?? 0) < 0 ? .red : (stock.change ?? 0) > 0 ? .green : .gray)
                             }
                             .font(.subheadline)
@@ -280,7 +277,7 @@ struct favView: View {
                 // send update to the server here.
             }
         
-        .environment(\.editMode, $editMode)// Pass editMode down
+//        .environment(\.editMode, $editMode)// Pass editMode down
 //        .onAppear {
 //            viewModel.fetchWatchlist()
 //        }

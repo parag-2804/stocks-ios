@@ -15,9 +15,10 @@ struct StockInfoView: View {
     @EnvironmentObject var webService: WebService
     @EnvironmentObject var viewModel: Watchlist
     var ticker: String
-    @State var selectedChart: ChartType = .hourly
+//    @State var selectedChart: ChartType = .hourly
     @EnvironmentObject var portfolioViewModel: PortfolioViewModel
-    
+    @State private var showToast: Bool = false
+    @State private var toastMessage: String = ""
     
     @State var isAddedtoFav = false
        
@@ -30,29 +31,42 @@ struct StockInfoView: View {
             
             ScrollView{
                 
-                VStack(alignment: .leading, spacing: 20.0){
+                VStack(alignment: .leading, spacing: 25.0){
                     
                     stockheadView()
                         
                     
-                    
-                    if selectedChart == .hourly
-                    {
-                        Text("Hourly Chart")
-                        HourlyChartView()
-                            .frame(height: 400)
-                            
-                    } else {
-                        Text("Historical Chart")
-                        HistoricalChartView()
-                            .frame(height: 400)
-                           
-                    }
-                    
+//                    
+//                    if selectedChart == .hourly
+//                    {
+//                        Text("Hourly Chart")
+//                        HourlyChartView()
+//                            .frame(height: 400)
+//                            
+//                    } else {
+//                        Text("Historical Chart")
+//                        HistoricalChartView()
+//                            .frame(height: 400)
+//                           
+//                    }
+//                    
 
                     
-                    ChartSwitcherView(selectedChart: $selectedChart)
-                      
+//                    ChartSwitcherView(selectedChart: $selectedChart)
+                    TabView {
+                                                        HourlyChartView()
+                                                            .tabItem {
+                                                                Image(systemName: "chart.xyaxis.line")
+                                                                Text("Hourly")
+                                                            }
+                                                        
+                                                        HistoricalChartView()
+                                                            .tabItem {
+                                                                Image(systemName: "clock")
+                                                                Text("Historical")
+                                                            }
+                                                    }
+                                                    .frame(height: 500)
                     
                     
                     PortfView(ticker: ticker)
@@ -100,6 +114,9 @@ struct StockInfoView: View {
                                         viewModel.deleteStockFromWatchlist(symbol: ticker)
                                     } else {
                                         viewModel.addStockToWatchlist(symbol: ticker, companyName: webService.descData.name)
+                                        
+                                        toastMessage = "Adding \(ticker) to Favourites"
+                                        showToast = true
                                     }
                                     isAddedtoFav.toggle()
                         
@@ -118,6 +135,7 @@ struct StockInfoView: View {
                 webService.fetchAPI(ticker: ticker)
                     }
         }
+        .toast(message: toastMessage ,isShowing: $showToast)
       
     }
     
@@ -175,48 +193,48 @@ struct stockheadView: View{
     }
 
 
-struct ChartSwitcherView: View {
-    @Binding var selectedChart: StockInfoView.ChartType
-
-    var body: some View {
-        HStack {
-            Button(action: {
-                self.selectedChart = .hourly
-            }) {
-                ChartLabel(title: "Hourly", icon: "chart.xyaxis.line", isSelected: selectedChart == .hourly)
-            }
-            .buttonStyle(PlainButtonStyle())
-            
-            Spacer().frame(width: 100)
-            
-            Button(action: {
-                self.selectedChart = .historical
-            }) {
-                ChartLabel(title: "Historical", icon: "clock", isSelected: selectedChart == .historical)
-            }
-            .buttonStyle(PlainButtonStyle())
-        }
-        .padding(.leading, 85.0)
-    }
-}
-
-// Custom label for the chart switcher buttons
-struct ChartLabel: View {
-    var title: String
-    var icon: String
-    var isSelected: Bool
-
-    var body: some View {
-        Label {
-            Text(title)
-                .foregroundColor(isSelected ? .blue : .gray)
-        } icon: {
-            Image(systemName: icon)
-                .foregroundColor(isSelected ? .blue : .gray)
-        }
-        .labelStyle(VerticalLabelStyle())
-    }
-}
+//struct ChartSwitcherView: View {
+//    @Binding var selectedChart: StockInfoView.ChartType
+//
+//    var body: some View {
+//        HStack {
+//            Button(action: {
+//                self.selectedChart = .hourly
+//            }) {
+//                ChartLabel(title: "Hourly", icon: "chart.xyaxis.line", isSelected: selectedChart == .hourly)
+//            }
+//            .buttonStyle(PlainButtonStyle())
+//            
+//            Spacer().frame(width: 100)
+//            
+//            Button(action: {
+//                self.selectedChart = .historical
+//            }) {
+//                ChartLabel(title: "Historical", icon: "clock", isSelected: selectedChart == .historical)
+//            }
+//            .buttonStyle(PlainButtonStyle())
+//        }
+//        .padding(.leading, 85.0)
+//    }
+//}
+//
+//// Custom label for the chart switcher buttons
+//struct ChartLabel: View {
+//    var title: String
+//    var icon: String
+//    var isSelected: Bool
+//
+//    var body: some View {
+//        Label {
+//            Text(title)
+//                .foregroundColor(isSelected ? .blue : .gray)
+//        } icon: {
+//            Image(systemName: icon)
+//                .foregroundColor(isSelected ? .blue : .gray)
+//        }
+//        .labelStyle(VerticalLabelStyle())
+//    }
+//}
 
 //var HourlyChart: some View {
 //    
@@ -431,15 +449,16 @@ extension View {
 //        case buy, sell
 //    }
 //}
+
 struct SuccessView: View {
-    var tradeType: TradeType
+    let tradeType: String
     let numberOfShares: Int
     let stockSymbol: String
     var dismissAction: () -> Void
-
-    enum TradeType {
-        case buy, sell
-    }
+    @EnvironmentObject var portfolioViewModel: PortfolioViewModel
+//    enum TradeType {
+//        case buy, sell
+//    }
 
     var body: some View {
         ZStack {
@@ -455,7 +474,7 @@ struct SuccessView: View {
                     .fontWeight(.bold)
                     .foregroundColor(.white)
 
-                Text("You have successfully \(tradeType == .buy ? "bought" : "sold") \(numberOfShares) \(numberOfShares == 1 ? "share" : "shares") of \(stockSymbol).")
+                Text("You have successfully \(tradeType) \(numberOfShares) \(numberOfShares == 1 ? "share" : "shares") of \(stockSymbol).")
                     .font(.body)
                     .foregroundColor(.white)
 //                    .multilineTextAlignment(.center)
@@ -463,7 +482,12 @@ struct SuccessView: View {
 
                 Spacer()
                 
-                Button(action: dismissAction) {
+//                Button(action: dismissAction)
+                Button(action: {
+                            portfolioViewModel.fetchPortfolio() // Fetch portfolio data
+                            dismissAction()                     // Dismiss the view
+                        })
+                {
                     Text("Done")
                         .font(.headline)
                         .foregroundColor(.green)
@@ -491,7 +515,7 @@ struct TradeSheetView: View {
     @State private var showToast: Bool = false
     @State private var toastMessage: String = ""
     @State private var showSuccessPopup = false
-    @State var tradeType: SuccessView.TradeType = .buy
+    @State var tradeType: String = ""
    
     private var stockDetails: Stock? {
             portfolioViewModel.portfolioData?.stocklist.first(where: { $0.symbol == ticker })
@@ -594,98 +618,109 @@ struct TradeSheetView: View {
     /*var sharePrice: Double = 171.09*/ // Example price per share
     
     var body: some View {
-        NavigationView{
-            VStack {
-                HStack {
+        
+        if(showSuccessPopup){
+            SuccessView(tradeType: tradeType, numberOfShares: Int(numberOfShares) ?? 0, stockSymbol: ticker, dismissAction: {
+                            // This closure will be called when the "Done" button is tapped
+                            self.isPresented = false
+                            showSuccessPopup = false
+            
+                        })
+        }
+        else{
+            NavigationView{
+                VStack {
+                    HStack {
+                        Spacer()
+                        Button(action: {
+                            self.isPresented = false
+                        }) {
+                            Image(systemName: "xmark")
+                        }
+                        .padding()
+                    }
+                    
+                    Text("Trade \(webService.descData.name) shares")
+                        .font(.headline)
+                        .fontWeight(.bold)
                     Spacer()
-                    Button(action: {
-                        self.isPresented = false
-                    }) {
-                        Image(systemName: "xmark")
+                    HStack(){
+                        TextField("0", text: $numberOfShares)
+                        
+                            .keyboardType(.numberPad)
+                            .font(.system(size: 100))
+                        
+                        //                        .multilineTextAlignment(.center)
+                            .onChange(of: numberOfShares) { _ in
+                                
+                                
+                                //                            portfolioViewModel.fetchPortfolio()
+                            }
+                        
+                        
+                        Text((Int(numberOfShares) == 1 || Int(numberOfShares) == 0 ? "Share" : "Shares"))
+                            .font(.title)
+                    }
+                    .padding(.horizontal, 15.0)
+                    HStack{
+                        Spacer()
+                        Text("× $\(webService.stockData.currentPrice, specifier: "%.2f")/share = $\(totalCost,specifier: "%.2f")")
+                            .padding()
+                    }
+                    Spacer()
+                    Text("$\(portfolioViewModel.portfolioData?.balance ?? 0, specifier: "%.2f") available to buy \(ticker)")
+                        .font(.footnote)
+                        .foregroundColor(Color.gray)
+                    
+                    HStack {
+                        Button(action: {
+                            
+                            //                        tradeType = .buy
+                            
+                            tradeType = "bought"
+                            executeBuyTrade()
+                            //                        self.isPresented = false
+                            
+                        }) {
+                            Text("Buy")
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .background(Color.green)
+                                .foregroundColor(.white)
+                                .cornerRadius(30)
+                        }
+                        
+                        Button(action: {
+                            tradeType = "sold"
+                            executeSellTrade()
+                            //                        self.isPresented = false
+                            
+                        }) {
+                            Text("Sell")
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .background(Color.green)
+                                .foregroundColor(.white)
+                                .cornerRadius(30)
+                        }
                     }
                     .padding()
                 }
-                
-                Text("Trade \(webService.descData.name) shares")
-                    .font(.headline)
-                    .fontWeight(.bold)
-                Spacer()
-                HStack(){
-                    TextField("0", text: $numberOfShares)
-                    
-                        .keyboardType(.numberPad)
-                        .font(.system(size: 100))
-                    
-                    //                        .multilineTextAlignment(.center)
-                        .onChange(of: numberOfShares) { _ in
-                        
-                            
-                            //                            portfolioViewModel.fetchPortfolio()
-                        }
-                    
-                    
-                    Text((Int(numberOfShares) == 1 || Int(numberOfShares) == 0 ? "Share" : "Shares"))
-                        .font(.title)
-                }
-                .padding(.horizontal, 15.0)
-                HStack{
-                    Spacer()
-                    Text("× $\(webService.stockData.currentPrice, specifier: "%.2f")/share = $\(totalCost,specifier: "%.2f")")
-                        .padding()
-                }
-                Spacer()
-                Text("$\(portfolioViewModel.portfolioData?.balance ?? 0, specifier: "%.2f") available to buy \(ticker)")
-                    .font(.footnote)
-                    .foregroundColor(Color.gray)
-                
-                HStack {
-                    Button(action: {
-                        
-//                        tradeType = .buy
-                        
-                        tradeType = .buy
-                        executeBuyTrade()
-                        //                        self.isPresented = false
-                        
-                    }) {
-                        Text("Buy")
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(Color.green)
-                            .foregroundColor(.white)
-                            .cornerRadius(30)
-                    }
-                    
-                    Button(action: {
-                        tradeType = .sell
-                        executeSellTrade()
-                        //                        self.isPresented = false
-                        
-                    }) {
-                        Text("Sell")
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(Color.green)
-                            .foregroundColor(.white)
-                            .cornerRadius(30)
-                    }
-                }
-                .padding()
             }
+            
+            .toast(message: toastMessage ,isShowing: $showToast)
+            //        .sheet(isPresented: $showSuccessPopup){
+            //        //        .sheet(isPresented: $showSuccessPopup)
+            //
+            //            SuccessView(tradeType: tradeType, numberOfShares: Int(numberOfShares) ?? 0, stockSymbol: ticker, dismissAction: {
+            //                // This closure will be called when the "Done" button is tapped
+            //                self.isPresented = false
+            //                showSuccessPopup = false
+            //
+            //            })
+            //        }
+            
         }
-        
-        .toast(message: toastMessage ,isShowing: $showToast)
-        .sheet(isPresented: $showSuccessPopup){
-        //        .sheet(isPresented: $showSuccessPopup)
-        
-            SuccessView(tradeType: tradeType, numberOfShares: Int(numberOfShares) ?? 0, stockSymbol: ticker, dismissAction: {
-                // This closure will be called when the "Done" button is tapped
-                self.isPresented = false
-                showSuccessPopup = false
-                
-            })
-        }
-    
     }
 }
 
@@ -759,41 +794,51 @@ struct CompanyInfoView: View {
             Text("About")
                 .font(.title2)
                 .padding(.bottom, 2)
-            VStack(spacing: 7){
+            
+            HStack{
                 
+            
+                VStack(alignment: .leading, spacing: 10){
+                    
+                    
+
+                        Text("IPO Start Date:")
+                            .fontWeight(.semibold)
+
+
+                        Text("Industry:")
+                            .fontWeight(.semibold)
+
+                    
+
+                        Text("Webpage:")
+                            .fontWeight(.semibold)
+
+                        Text("Company Peers:")
+                            .fontWeight(.semibold)
+
+                }
                 
-                HStack {
-                    Text("IPO Start Date:")
-                        .fontWeight(.semibold)
-                    Spacer()
+                VStack(alignment: .leading, spacing: 10){
+                    
+                    
                     Text(webService.descData.ipo)
-                }
-                
-                HStack {
-                    Text("Industry:")
-                        .fontWeight(.semibold)
-                    Spacer()
+                    
+                    
                     Text(webService.descData.finnhubIndustry)
-                }
-                
-                HStack {
-                    Text("Webpage:")
-                        .fontWeight(.semibold)
-                    Spacer()
+                    
+                    
+                    
                     let urlString = webService.descData.weburl
-                        if let url = URL(string: urlString) {
+                    if let url = URL(string: urlString) {
                         Link(webService.descData.weburl, destination: url)
                     } else {
                         // Handle case where URL is not valid or missing
                         Text("Loading")
                     }
-                }
-                
-                HStack {
-                    Text("Company Peers:")
-                        .fontWeight(.semibold)
-                    Spacer()
-                    Spacer()
+                    
+                    
+                    
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 10) {
                             ForEach(webService.peers, id: \.self) { peer in
@@ -802,8 +847,8 @@ struct CompanyInfoView: View {
                                     .onTapGesture {
                                         ticker = peer // Update the shared ticker
                                         webService.fetchAPI(ticker: ticker)
-                                    self.selectedPeer = peer // Trigger navigation
-                                }
+                                        self.selectedPeer = peer // Trigger navigation
+                                    }
                                 
                                 // Invisible NavigationLink for navigation
                                     .background(NavigationLink("", destination: StockInfoView(ticker: ticker), isActive: .constant(peer == selectedPeer ?? "Loading")).hidden())
@@ -811,6 +856,7 @@ struct CompanyInfoView: View {
                             }
                         }
                     }
+                    
                     
                     
                 }

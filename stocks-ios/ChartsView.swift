@@ -15,37 +15,6 @@ struct WebView: UIViewRepresentable {
     var htmlName: String
     @Binding var javascriptString: String?
 
-//    func makeUIView(context: Context) -> WKWebView {
-//        guard let filePath = Bundle.main.path(forResource: htmlName, ofType: "html") else {
-//            fatalError("File not found.")
-//        }
-//        let fileURL = URL(fileURLWithPath: filePath)
-//        let request = URLRequest(url: fileURL)
-//
-//        let webView = WKWebView()
-//        webView.load(request)
-//        return webView
-//    }
-//
-//    func updateUIView(_ uiView: WKWebView, context: Context) {
-//        if let javascript = javascriptString {
-//            uiView.evaluateJavaScript(javascript) { result, error in
-//                if let error = error {
-//                    print("JavaScript evaluation error: \(error.localizedDescription)")
-//                }
-//            }
-//        }
-//    }
-//    func makeUIView(context: Context) -> WKWebView {
-//        let webView = WKWebView()
-//        webView.navigationDelegate = context.coordinator
-//        if let filePath = Bundle.main.path(forResource: htmlName, ofType: "html"),
-//           let fileURL = URL(string: filePath) {
-//            let request = URLRequest(url: fileURL)
-//            webView.load(request)
-//        }
-//        return webView
-//    }
     func makeUIView(context: Context) -> WKWebView {
         let webView = WKWebView()
         webView.navigationDelegate = context.coordinator
@@ -153,6 +122,7 @@ struct HourlyChartView: View {
             
             .onChange(of: webService.HourlyChartDataJson) { newData in
                 if let validData = newData {
+//                    print("Hourly Chart Data: \(newData)")
 //                    print("Hourly Chart Json passed:\(validData)")
                     // Safely encode the JSON string for URL
                     if let encodedData = validData.addingPercentEncoding(withAllowedCharacters: .alphanumerics) {
@@ -176,6 +146,8 @@ struct HistoricalChartView: View {
             
                 .onChange(of: webService.HistoricalChartDataJson) { newData in
                     if let validData = newData {
+                        
+                        print("Historical Chart Data: \(newData)")
                         // Safely encode the JSON string for URL
                         if let encodedData = validData.addingPercentEncoding(withAllowedCharacters: .alphanumerics) {
                             // Pass the safely encoded JSON string to the JavaScript function
@@ -186,6 +158,162 @@ struct HistoricalChartView: View {
     }
     
 }
+
+
+
+//struct HistoricalChartView: View {
+//    //@ObservedObject var viewModel: HistoricalChartViewModel
+//    @EnvironmentObject var viewModel: WebService
+//
+//    var body: some View {
+//        Group {
+////            if viewModel.isLoading {
+////                ProgressView("Loading...")
+////            } else
+//            if let errorMessage = viewModel.errorMessage {
+//                Text(errorMessage)
+//            } else {
+//                HistoricalChartWebView(chartData: viewModel.historicalData)
+//                    .frame(height: 400)
+//            }
+//        }
+//
+//    }
+//}
+
+//struct HistoricalChartWebView: UIViewRepresentable {
+//    let chartData: [HistoricalStockPoint]
+//
+//    func makeUIView(context: Context) -> WKWebView {
+//        let webView = WKWebView()
+//        webView.isOpaque = false
+//        webView.backgroundColor = .clear
+//        return webView
+//    }
+//    
+//    func updateUIView(_ uiView: WKWebView, context: Context) {
+//        // Prepare the data strings
+//        let ohlcDataString = chartData.map { "[\($0.t), \($0.o), \($0.h), \($0.l), \($0.c)]" }.joined(separator: ", ")
+//        let volumeDataString = chartData.map { "[\($0.t), \($0.v)]" }.joined(separator: ", ")
+//        
+//        let htmlContent = generateHistoricalChartHTML(ohlcDataString: ohlcDataString, volumeDataString: volumeDataString, title: "Dynamic Symbol")
+//        uiView.loadHTMLString(htmlContent, baseURL: nil)
+//    }
+//
+//    
+//    private func generateHistoricalChartHTML(ohlcDataString: String, volumeDataString: String, title: String) -> String {
+//        let htmlContent = """
+//        <!DOCTYPE html>
+//        <html>
+//        <head>
+//            <meta name="viewport" content="width=device-width, initial-scale=1">
+//            <script src="https://code.highcharts.com/stock/highstock.js"></script>
+//            <script src="https://code.highcharts.com/stock/modules/data.js"></script>
+//            <script src="https://code.highcharts.com/stock/modules/exporting.js"></script>
+//            <script src="https://code.highcharts.com/stock/modules/accessibility.js"></script>
+//            <style>
+//                html, body, #container { height: 100%; margin: 0; padding: 0; }
+//            </style>
+//        </head>
+//        <body>
+//            <div id="container"></div>
+//            <script>
+//                console.log('OHLC data:', [\(ohlcDataString)]);
+//                console.log('Volume data:', [\(volumeDataString)]);
+//                Highcharts.stockChart('container', {
+//                    chart: {
+//                        zoomType: 'x'
+//                    },
+//                    title: {
+//                        text: 'Historical',
+//                        style: {
+//                            fontSize: '15'
+//                        }
+//                    },
+//                    subtitle: {
+//                        text: 'With SMA and Volume by Price technical indicators',
+//                        style: {
+//                            color: '#9e9e9f',
+//                            fontSize: '12'
+//                        }
+//                    },
+//                    rangeSelector: {
+//                        selected: 4, // This will select the '1y' button by default to zoom closer on the most recent data
+//                        inputEnabled: false, // Disables the input boxes
+//                        buttons: [{
+//                            type: 'month',
+//                            count: 1,
+//                            text: '1m'
+//                        }, {
+//                            type: 'month',
+//                            count: 3,
+//                            text: '3m'
+//                        }, {
+//                            type: 'month',
+//                            count: 6,
+//                            text: '6m'
+//                        },{
+//                            type: 'year',
+//                            count: 1,
+//                            text: '1y'
+//                        }, {
+//                            type: 'all',
+//                            text: 'All'
+//                        }]
+//                    },
+//                    xAxis: {
+//                        type: 'datetime',
+//                        ordinal: false // This makes sure that periods without data are not displayed
+//                    },
+//                    yAxis: [{
+//                        labels: {
+//                            align: 'right',
+//                            x: -3
+//                        },
+//                        title: {
+//                            text: 'OHLC'
+//                        },
+//                        height: '60%',
+//                        lineWidth: 2,
+//                        resize: {
+//                            enabled: true
+//                        }
+//                    }, {
+//                        labels: {
+//                            align: 'right',
+//                            x: -3
+//                        },
+//                        title: {
+//                            text: 'Volume'
+//                        },
+//                        top: '65%',
+//                        height: '35%',
+//                        offset: 0,
+//                        lineWidth: 2
+//                    }],
+//                    tooltip: {
+//                        split: true
+//                    },
+//                    series: [{
+//                        type: 'candlestick',
+//                        name: '\(title)',
+//                        data: [\(ohlcDataString)],
+//                        zIndex: 2
+//                    }, {
+//                        type: 'column',
+//                        name: 'Volume',
+//                        data: [\(volumeDataString)],
+//                        yAxis: 1
+//                    }]
+//                });
+//            </script>
+//        </body>
+//        </html>
+//        """
+//        return htmlContent
+//    }
+//
+//}
 
 #Preview {
     RecomChartView()

@@ -225,8 +225,10 @@ class WebService: ObservableObject {
         
         fetchRecommendationChartData(ticker: ticker)
         fetchEPSChartData(ticker: ticker)
-//        fetchHourlyChartData(ticker: ticker)
-//        fetchHistoricalChartData(ticker: ticker)
+        fetchHourlyChartData(ticker: ticker)
+        fetchHistoricalChartData(ticker: ticker)
+        
+        
         
     }
         
@@ -415,7 +417,7 @@ class WebService: ObservableObject {
                    let jsonData = try? JSONSerialization.data(withJSONObject: jsonObject),
                    let jsonString = String(data: jsonData, encoding: .utf8) {
                     self?.HistoricalChartDataJson = jsonString
-//                    print("Historical Chart JSON: \(jsonString)")
+                    print("Historical Chart JSON: \(jsonString)")
                 } else {
                     print("Data could not be converted to JSON string")
                     self?.HistoricalChartDataJson = nil // Clear any existing data if conversion fails
