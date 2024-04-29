@@ -896,7 +896,7 @@ struct InsiderSentimentsView: View {
                 
             
              HStack {
-                        Text("Category")
+                 Text(webService.descData.name)
                             .bold()
                         Spacer()
                         Text("MSPR")

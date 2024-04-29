@@ -237,7 +237,8 @@ struct NewsDetailsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
                     Text(article.source)
-                        .font(.headline)
+                        .font(.title)
+                        .fontWeight(.bold)
                     Text(formatDate(article.datetime))
                         .font(.subheadline)
                         .foregroundColor(.gray)
