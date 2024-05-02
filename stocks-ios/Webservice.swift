@@ -122,7 +122,7 @@ struct InsiderSums {
 class WebService: ObservableObject {
     
     static let service = WebService()
-    private let baseUrl = URL(string: "http://localhost:8080/")!
+    private let baseUrl = URL(string: "https://parag2804backend.wl.r.appspot.com/")!
     @Published var autocompleteSuggestions: [FilteredAutoResult] = []
     private var debounceWorkItem: DispatchWorkItem?
     private let debounceInterval: TimeInterval = 0.5
@@ -151,9 +151,7 @@ class WebService: ObservableObject {
                 print("Error fetching company description: \(error)")
             }
 
-            // Note: This is a simple example. In a real app, consider how you want to handle
-            // the asynchronous nature of these calls, especially if you need both results
-            // together for further processing.
+
         }
 
         getStockPrice (ticker: ticker){ result in
@@ -227,14 +225,14 @@ class WebService: ObservableObject {
         fetchEPSChartData(ticker: ticker)
         fetchHourlyChartData(ticker: ticker)
         fetchHistoricalChartData(ticker: ticker)
-        
+    
         
         
     }
         
     
 
-    // Generic method to fetch data from the server
+
     private func fetchData<T: Decodable>(url: URL, completion: @escaping (Result<T, Error>) -> Void) {
         URLSession.shared.dataTask(with: url) { data, response, error in
             DispatchQueue.main.async {
@@ -281,7 +279,7 @@ class WebService: ObservableObject {
     
     
     func fetchRecommendationChartData(ticker: String) {
-        let urlString = "http://localhost:8080/recommendation/\(ticker)"
+        let urlString = "https://parag2804backend.wl.r.appspot.com/recommendation/\(ticker)"
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
             return
@@ -318,7 +316,7 @@ class WebService: ObservableObject {
     }
     
     func fetchEPSChartData(ticker: String) {
-        let urlString = "http://localhost:8080/companyEarnings/\(ticker)"
+        let urlString = "https://parag2804backend.wl.r.appspot.com/companyEarnings/\(ticker)"
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
             return
@@ -355,7 +353,7 @@ class WebService: ObservableObject {
     }
     
     func fetchHourlyChartData(ticker: String) {
-        let urlString = "http://localhost:8080/companyHourly/\(ticker)"
+        let urlString = "https://parag2804backend.wl.r.appspot.com/companyHourly/\(ticker)"
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
             return
@@ -392,7 +390,7 @@ class WebService: ObservableObject {
     }
     
     func fetchHistoricalChartData(ticker: String) {
-        let urlString = "http://localhost:8080/historicalChart/\(ticker)"
+        let urlString = "https://parag2804backend.wl.r.appspot.com/historicalChart/\(ticker)"
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
             return
@@ -417,7 +415,7 @@ class WebService: ObservableObject {
                    let jsonData = try? JSONSerialization.data(withJSONObject: jsonObject),
                    let jsonString = String(data: jsonData, encoding: .utf8) {
                     self?.HistoricalChartDataJson = jsonString
-                    print("Historical Chart JSON: \(jsonString)")
+//                    print("Historical Chart JSON: \(jsonString)")
                 } else {
                     print("Data could not be converted to JSON string")
                     self?.HistoricalChartDataJson = nil // Clear any existing data if conversion fails
@@ -488,30 +486,7 @@ class WebService: ObservableObject {
             debounceWorkItem = requestWorkItem
             DispatchQueue.main.asyncAfter(deadline: .now() + debounceInterval, execute: requestWorkItem)
         }
-//    
-//    func updateRecomChartData(webView: WKWebView, data: String) {
-//        let script = "loadDataForRecomChart(\(data));"
-//        webView.evaluateJavaScript(script) { (result, error) in
-//            if let error = error {
-//                print("Error injecting data into WebView:", error.localizedDescription)
-//            }
-//        }
-//    }
-    
-    
-    // Example structs for parsing JSON responses (you need to adjust these according to your actual JSON structure)
-    
-//    struct Recommendation: Codable {
-//        let buy: Int
-//        let hold: Int
-//        let period: String
-//        let sell: Int
-//        let strongBuy: Int
-//        let strongSell: Int
-//        let symbol: String
-//    }
-//    
-    
+   
 
     
 }

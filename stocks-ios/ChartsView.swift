@@ -11,24 +11,32 @@ import UIKit
 import Combine
 import Foundation
 
+
+
 struct WebView: UIViewRepresentable {
-    var htmlName: String
+    var htmlContent: String
     @Binding var javascriptString: String?
 
     func makeUIView(context: Context) -> WKWebView {
         let webView = WKWebView()
         webView.navigationDelegate = context.coordinator
-        if let filePath = Bundle.main.path(forResource: htmlName, ofType: "html") {
-            let fileURL = URL(fileURLWithPath: filePath)
-            let request = URLRequest(url: fileURL)
-            webView.load(request)
-        } else {
-            print("Failed to locate \(htmlName).html in bundle.")
-        }
+
+        // Load the initial HTML content
+        webView.loadHTMLString(htmlContent, baseURL: nil)
+
         return webView
     }
 
-    func updateUIView(_ uiView: WKWebView, context: Context) {}
+    func updateUIView(_ uiView: WKWebView, context: Context) {
+        // Reload JavaScript if necessary
+        if let jsString = javascriptString {
+            uiView.evaluateJavaScript(jsString) { result, error in
+                if let error = error {
+                    print("JavaScript evaluation error after page load: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -42,8 +50,8 @@ struct WebView: UIViewRepresentable {
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            if let javascript = parent.javascriptString {
-                webView.evaluateJavaScript(javascript) { result, error in
+            if let jsString = parent.javascriptString {
+                webView.evaluateJavaScript(jsString) { result, error in
                     if let error = error {
                         print("JavaScript evaluation error after page load: \(error.localizedDescription)")
                     }
@@ -59,36 +67,98 @@ struct RecomChartView: View {
     @State private var javascriptString: String? = nil
 
     var body: some View {
-        
-            WebView(htmlName: "recommendationChart", javascriptString: $javascriptString)
-//                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            //            .onAppear {
-            //                webService.fetchRecommendationChartData()
-            //            }
-            //            .onChange(of: webService.recommendationChartDataJson) { newData in
-            //                if let validData = newData {
-            //                    let encodedData = validData.addingPercentEncoding(withAllowedCharacters: .alphanumerics)
-            //                    javascriptString = "loadDataForRecomChart(decodeURIComponent('\(encodedData ?? "")'));"
-            //                }
-            //            }
-            //
-            //            .onChange(of: webService.recommendationChartDataJson) { newData in
-            //                if let validData = newData {
-            //                    print("Recommendation Chart JSON: \(validData)")
-            //                    javascriptString = "loadDataForRecomChart(\(validData));"
-            //                }
-            //            }
-                .onChange(of: webService.recommendationChartDataJson) { newData in
-                    if let validData = newData {
-                        // Safely encode the JSON string for URL
-                        if let encodedData = validData.addingPercentEncoding(withAllowedCharacters: .alphanumerics) {
-                            // Pass the safely encoded JSON string to the JavaScript function
-                            javascriptString = "loadDataForRecomChart(decodeURIComponent('\(encodedData)'));"
-                        }
+        WebView(htmlContent: recommendationChartHTML, javascriptString: $javascriptString)
+            .onChange(of: webService.recommendationChartDataJson) { newData in
+                if let validData = newData {
+                    if let encodedData = validData.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+                        javascriptString = "loadDataForRecomChart(decodeURIComponent('\(encodedData)'));"
                     }
                 }
+            }
+    }
+
+    private var recommendationChartHTML: String {
+        """
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Recommendation Trends Chart</title>
+            <script src="https://code.highcharts.com/highcharts.js"></script>
+            <script src="https://code.highcharts.com/modules/exporting.js"></script>
+        </head>
+        <body>
+            <div id="recomChartContainer" style="height: 100%; width: 100%; margin: 0 auto;"></div>
+            <script>
+                // This function will be called from Swift with the JSON data
+                function loadDataForRecomChart(jsonData) {
+                    // Parse the JSON data
+                    try {
+                        var dataRecom = JSON.parse(decodeURIComponent(jsonData));
+                            // Existing code to update Highcharts chart...
+                        } catch (e) {
+                            console.error('Error parsing JSON data: ', e);
+                            // Handle errors, possibly show an error message in the chart container
+                        }
+
+                    // Prepare the data arrays
+                    var recomPeriod = [];
+                    var strongBuy = [];
+                    var buy = [];
+                    var hold = [];
+                    var sell = [];
+                    var strongSell = [];
+
+                    // Populate the data arrays
+                    dataRecom.forEach(function(item) {
+                        recomPeriod.push(item.period.substring(0, 7));
+                        strongBuy.push(item.strongBuy);
+                        buy.push(item.buy);
+                        hold.push(item.hold);
+                        sell.push(item.sell);
+                        strongSell.push(item.strongSell);
+                    });
+
+                    // Use Highcharts to create the chart
+                    Highcharts.chart('recomChartContainer', {
+                        chart: { type: 'column' },
+                        title: { text: 'Recommendation Trends' },
+                        xAxis: { categories: recomPeriod },
+                        yAxis: {
+                            min: 0,
+                            title: { text: '# Analysis', align: 'high' },
+                            stackLabels: { enabled: true }
+                        },
+                        legend: {
+                            align: 'center',
+                            x: -24,
+                            y: 0,
+                            backgroundColor: 'white',
+                            shadow: false,
+                            itemStyle: { fontSize: '7px' },
+                        },
+                        plotOptions: {
+                            column: {
+                                stacking: 'normal',
+                                dataLabels: { enabled: true }
+                            }
+                        },
+                        series: [
+                            { name: 'Strong Buy', data: strongBuy, color: '#186F37' },
+                            { name: 'Buy', data: buy, color: '#1CB955' },
+                            { name: 'Hold', data: hold, color: '#B98B1D' },
+                            { name: 'Sell', data: sell, color: 'rgb(255,0,0)' },
+                            { name: 'Strong Sell', data: strongSell, color: '#803131' }
+                        ]
+                    });
+                }
+            </script>
+        </body>
+        </html>
+
+        """
         }
-    
 }
 
 struct EPSChartView: View {
@@ -96,20 +166,128 @@ struct EPSChartView: View {
     @State private var javascriptString: String? = nil
 
     var body: some View {
-            
-            WebView(htmlName: "EPSChart", javascriptString: $javascriptString)
-            
-                .onChange(of: webService.EPSChartDataJson) { newData in
-                    if let validData = newData {
-                        // Safely encode the JSON string for URL
-                        if let encodedData = validData.addingPercentEncoding(withAllowedCharacters: .alphanumerics) {
-                            // Pass the safely encoded JSON string to the JavaScript function
-                            javascriptString = "loadEPSChartData(decodeURIComponent('\(encodedData)'));"
-                        }
+        WebView(htmlContent: epsChartHTML, javascriptString: $javascriptString)
+            .onChange(of: webService.EPSChartDataJson) { newData in
+                if let validData = newData {
+                    if let encodedData = validData.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+                        javascriptString = "loadEPSChartData(decodeURIComponent('\(encodedData)'));"
                     }
                 }
+            }
     }
-    
+
+    private var epsChartHTML: String {
+        """
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>EPS Trends Chart</title>
+            <script src="https://code.highcharts.com/highcharts.js"></script>
+            <script src="https://code.highcharts.com/modules/exporting.js"></script>
+        </head>
+        <body>
+            <div id="epsChartContainer" style="height: 350px; width: 100%; margin: 0 auto;"></div>
+            <script>
+                function loadEPSChartData(jsonData) {
+
+                    try {
+                        var dataEPS = JSON.parse(decodeURIComponent(jsonData));
+                            // Existing code to update Highcharts chart...
+                        } catch (e) {
+                            console.error('Error parsing JSON data: ', e);
+                            // Handle errors, possibly show an error message in the chart container
+                        }
+                    var epsSurpriseDataX = [];
+                    var actualData = [];
+                    var estimateData = [];
+                    
+                    dataEPS.forEach(function(item) {
+                        var label = item.period + " Surprise: " + item.surprise;
+                        epsSurpriseDataX.push(label);
+                        actualData.push([label, item.actual]);
+                        estimateData.push([label, item.estimate]);
+                    });
+                    
+                    var chartOptionsHistorical = {
+                        title: {
+                            text: 'Historical EPS Surprises',
+                            style: {
+                                fontSize: '15px',
+                                color: '#29363E',
+                            },
+                        },
+                        yAxis: {
+                            title: {
+                                text: 'Quarterly EPS',
+                            },
+                        },
+                        xAxis: {
+                            type: 'category',
+                            categories: epsSurpriseDataX,
+                            labels: {
+                                rotation: 0,
+                                useHTML: true,
+                                allowOverlap: true,
+                                style: {
+                                    fontSize: '10px',
+                                    wordBreak: 'break-all',
+                                    textAlign: 'center',
+                                    textOverflow: 'allow',
+                                },
+                            },
+                        },
+                        legend: {
+                            layout: 'vertical',
+                            align: 'right',
+                            verticalAlign: 'middle',
+                        },
+                        plotOptions: {
+                            series: {
+                                label: {
+                                    connectorAllowed: false,
+                                },
+                                pointStart: 2010,
+                            },
+                        },
+                        series: [
+                            {
+                                name: 'Actual',
+                                type: 'spline',
+                                data: actualData,
+                            },
+                            {
+                                name: 'Estimate',
+                                type: 'spline',
+                                data: estimateData,
+                            },
+                        ],
+                        responsive: {
+                            rules: [
+                                {
+                                    condition: {
+                                        maxWidth: 500,
+                                    },
+                                    chartOptions: {
+                                        legend: {
+                                            layout: 'horizontal',
+                                            align: 'center',
+                                            verticalAlign: 'bottom',
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                    };
+                    
+                    Highcharts.chart('epsChartContainer', chartOptionsHistorical);
+                }
+            </script>
+        </body>
+        </html>
+        """
+        }
 }
 
 struct HourlyChartView: View {
@@ -117,205 +295,249 @@ struct HourlyChartView: View {
     @State private var javascriptString: String? = nil
 
     var body: some View {
-            
-            WebView(htmlName: "HourlyChart", javascriptString: $javascriptString)
-            
+        WebView(htmlContent: hourlyChartHTML, javascriptString: $javascriptString)
             .onChange(of: webService.HourlyChartDataJson) { newData in
                 if let validData = newData {
-//                    print("Hourly Chart Data: \(newData)")
-//                    print("Hourly Chart Json passed:\(validData)")
-                    // Safely encode the JSON string for URL
-                    if let encodedData = validData.addingPercentEncoding(withAllowedCharacters: .alphanumerics) {
-                        // Pass the safely encoded JSON string to the JavaScript function
-//                        print("Hourly Chart Json passed:\(encodedData)")
-                        javascriptString = "loadHourlyChart(decodeURIComponent('\(encodedData)'));"
+                    if let encodedData = validData.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+                        javascriptString = "loadHourlyChart(decodeURIComponent('\(encodedData)'), \(webService.stockData.Change));"
                     }
                 }
             }
     }
-    
+
+    private var hourlyChartHTML: String {
+        """
+        <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <script src="https://code.highcharts.com/highcharts.js"></script>
+                    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+                </head>
+                <body>
+                    <div id="hourlyChartContainer" style="height: 100%; width: 100%;"></div>
+                    <script>
+                        function loadHourlyChart(encodedJsonData, change) {
+                            try {
+                                var jsonData = decodeURIComponent(encodedJsonData);
+                                var dataHourly = JSON.parse(jsonData);
+                                var list1 = [];
+
+                                dataHourly.results.forEach(function(item) {
+                                    var tempList1 = [
+                                        item.t, // Timestamp for the X axis
+                                        item.c  // Closing price for the Y axis
+                                    ];
+                                    list1.push(tempList1);
+                                });
+
+                                var lineColor = (change > 0) ? '#00ff00' : '#ff0000'; // Green for positive, Red for zero/negative
+
+                                Highcharts.chart('hourlyChartContainer', {
+                                    chart: {
+                                        type: 'line'
+                                    },
+                                    title: {
+                                        text: dataHourly.ticker + ' Hourly Price Variation',
+                                        style: {
+                                            color: '#9e9e9f',
+                                            fontSize: '15px'
+                                        },
+                                    },
+                                    legend: {
+                                        enabled: false
+                                    },
+                                    yAxis: [{
+                                        title: {
+                                            text: 'Price ($)'
+                                        },
+                                        opposite: true
+                                    }],
+                                    xAxis: {
+                                        type: 'datetime',
+                                        title: {
+                                            text: 'Time'
+                                        }
+                                    },
+                                    series: [{
+                                        name: 'Hourly Price',
+                                        data: list1,
+                                        color: lineColor, // Set the line color based on the change value
+                                        marker: {
+                                            enabled: false
+                                        }
+                                    }],
+                                    responsive: {
+                                        rules: [{
+                                            condition: {
+                                                maxWidth: 500
+                                            },
+                                            chartOptions: {
+                                                legend: {
+                                                    layout: 'horizontal',
+                                                    align: 'center',
+                                                    verticalAlign: 'bottom'
+                                                }
+                                            }
+                                        }]
+                                    }
+                                });
+                            } catch (e) {
+                                console.error('Error parsing JSON data: ', e);
+                                document.getElementById('hourlyChartContainer').innerText = 'Error loading data.';
+                            }
+                        }
+                    </script>
+                </body>
+                </html>
+        """
+        }
 }
 
-struct HistoricalChartView: View {
-    @EnvironmentObject var webService: WebService
-    @State private var javascriptString: String? = nil
 
-    var body: some View {
-            
-            WebView(htmlName: "HistoricalChart", javascriptString: $javascriptString)
-            
+    struct HistoricalChartView: View {
+        @EnvironmentObject var webService: WebService
+        @State private var javascriptString: String? = nil
+
+        var body: some View {
+            WebView(htmlContent: historicalChartHTML, javascriptString: $javascriptString)
                 .onChange(of: webService.HistoricalChartDataJson) { newData in
                     if let validData = newData {
-                        
-                        print("Historical Chart Data: \(newData)")
-                        // Safely encode the JSON string for URL
-                        if let encodedData = validData.addingPercentEncoding(withAllowedCharacters: .alphanumerics) {
-                            // Pass the safely encoded JSON string to the JavaScript function
+                        if let encodedData = validData.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
                             javascriptString = "loadHistoricalChart(decodeURIComponent('\(encodedData)'));"
                         }
                     }
                 }
+        }
+
+        private var historicalChartHTML: String {
+            """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <script src="https://code.highcharts.com/stock/highstock.js"></script>
+                <script src="https://code.highcharts.com/stock/modules/exporting.js"></script>
+                <script src="https://code.highcharts.com/stock/indicators/indicators.js"></script>
+                <script src="https://code.highcharts.com/stock/indicators/volume-by-price.js"></script>
+            </head>
+            <body>
+                <div id="historicalChartContainer" style="height: 100%; width: 100%;"></div>
+
+            <script>
+                function loadHistoricalChart(jsonData) {
+                    try {
+                        var data = JSON.parse(decodeURIComponent(jsonData));
+                        var ohlc = [];
+                        var volume = [];
+
+                        if (!data.results || !data.ticker) {
+                            throw new Error("JSON data does not contain required 'results' or 'ticker'");
+                        }
+
+                        data.results.forEach(function(item) {
+                            ohlc.push([
+                                item.t, // time
+                                item.o, // open
+                                item.h, // high
+                                item.l, // low
+                                item.c  // close
+                            ]);
+                            volume.push([
+                                item.t, // time
+                                item.v  // volume
+                            ]);
+                        });
+
+                        Highcharts.stockChart('historicalChartContainer', {
+                            time: {
+                                timezoneOffset: 7 * 60
+                            },
+                            title: {
+                                text: data.ticker + ' Historical'
+                            },
+                            subtitle: {
+                                text: 'With SMA and Volume by Price technical indicators'
+                            },
+                            rangeSelector: {
+                                buttons: [
+                                    {type: 'month', count: 1, text: '1m'},
+                                    {type: 'month', count: 3, text: '3m'},
+                                    {type: 'month', count: 6, text: '6m'},
+                                    {type: 'ytd', text: 'YTD'},
+                                    {type: 'year', count: 1, text: '1y'},
+                                    {type: 'all', text: 'All'}
+                                ],
+                                selected: 2,
+                                inputEnabled: true
+                            },
+                            xAxis: {
+                                type: 'datetime'
+                            },
+                            yAxis: [
+                                {
+                                    labels: { align: 'right', x: -3 },
+                                    title: { text: 'OHLC' },
+                                    height: '60%',
+                                    lineWidth: 2,
+                                    resize: { enabled: true }
+                                },
+                                {
+                                    labels: { align: 'right', x: -3 },
+                                    title: { text: 'Volume' },
+                                    top: '65%',
+                                    height: '35%',
+                                    offset: 0,
+                                    lineWidth: 2
+                                }
+                            ],
+                            series: [
+                                {
+                                    type: 'candlestick',
+                                    name: data.ticker,
+                                    data: ohlc,
+                                    id: data.ticker,
+                                    zIndex: 2
+                                },
+                                {
+                                    type: 'column',
+                                    name: 'Volume',
+                                    data: volume,
+                                    yAxis: 1,
+                                    id: 'volume'
+                                },
+                                {
+                                    type: 'vbp',
+                                    linkedTo: data.ticker,
+                                    params: { volumeSeriesID: 'volume' },
+                                    dataLabels: { enabled: false },
+                                    zoneLines: { enabled: false }
+                                },
+                                {
+                                    type: 'sma',
+                                    linkedTo: data.ticker,
+                                    zIndex: 1,
+                                    marker: { enabled: false }
+                                }
+                            ]
+                        });
+                    } catch (e) {
+                        console.error('Error parsing JSON data: ', e);
+                        document.getElementById('historicalChartContainer').innerText = 'Error loading data. ' + e.message;
+                    }
+                }
+            </script>
+
+            </body>
+            </html>
+
+            """
+            }
     }
-    
-}
 
-
-
-//struct HistoricalChartView: View {
-//    //@ObservedObject var viewModel: HistoricalChartViewModel
-//    @EnvironmentObject var viewModel: WebService
-//
-//    var body: some View {
-//        Group {
-////            if viewModel.isLoading {
-////                ProgressView("Loading...")
-////            } else
-//            if let errorMessage = viewModel.errorMessage {
-//                Text(errorMessage)
-//            } else {
-//                HistoricalChartWebView(chartData: viewModel.historicalData)
-//                    .frame(height: 400)
-//            }
-//        }
-//
-//    }
+//#Preview {
+//    RecomChartView()
+//        .environmentObject(WebService.service)
 //}
-
-//struct HistoricalChartWebView: UIViewRepresentable {
-//    let chartData: [HistoricalStockPoint]
-//
-//    func makeUIView(context: Context) -> WKWebView {
-//        let webView = WKWebView()
-//        webView.isOpaque = false
-//        webView.backgroundColor = .clear
-//        return webView
-//    }
-//    
-//    func updateUIView(_ uiView: WKWebView, context: Context) {
-//        // Prepare the data strings
-//        let ohlcDataString = chartData.map { "[\($0.t), \($0.o), \($0.h), \($0.l), \($0.c)]" }.joined(separator: ", ")
-//        let volumeDataString = chartData.map { "[\($0.t), \($0.v)]" }.joined(separator: ", ")
-//        
-//        let htmlContent = generateHistoricalChartHTML(ohlcDataString: ohlcDataString, volumeDataString: volumeDataString, title: "Dynamic Symbol")
-//        uiView.loadHTMLString(htmlContent, baseURL: nil)
-//    }
-//
-//    
-//    private func generateHistoricalChartHTML(ohlcDataString: String, volumeDataString: String, title: String) -> String {
-//        let htmlContent = """
-//        <!DOCTYPE html>
-//        <html>
-//        <head>
-//            <meta name="viewport" content="width=device-width, initial-scale=1">
-//            <script src="https://code.highcharts.com/stock/highstock.js"></script>
-//            <script src="https://code.highcharts.com/stock/modules/data.js"></script>
-//            <script src="https://code.highcharts.com/stock/modules/exporting.js"></script>
-//            <script src="https://code.highcharts.com/stock/modules/accessibility.js"></script>
-//            <style>
-//                html, body, #container { height: 100%; margin: 0; padding: 0; }
-//            </style>
-//        </head>
-//        <body>
-//            <div id="container"></div>
-//            <script>
-//                console.log('OHLC data:', [\(ohlcDataString)]);
-//                console.log('Volume data:', [\(volumeDataString)]);
-//                Highcharts.stockChart('container', {
-//                    chart: {
-//                        zoomType: 'x'
-//                    },
-//                    title: {
-//                        text: 'Historical',
-//                        style: {
-//                            fontSize: '15'
-//                        }
-//                    },
-//                    subtitle: {
-//                        text: 'With SMA and Volume by Price technical indicators',
-//                        style: {
-//                            color: '#9e9e9f',
-//                            fontSize: '12'
-//                        }
-//                    },
-//                    rangeSelector: {
-//                        selected: 4, // This will select the '1y' button by default to zoom closer on the most recent data
-//                        inputEnabled: false, // Disables the input boxes
-//                        buttons: [{
-//                            type: 'month',
-//                            count: 1,
-//                            text: '1m'
-//                        }, {
-//                            type: 'month',
-//                            count: 3,
-//                            text: '3m'
-//                        }, {
-//                            type: 'month',
-//                            count: 6,
-//                            text: '6m'
-//                        },{
-//                            type: 'year',
-//                            count: 1,
-//                            text: '1y'
-//                        }, {
-//                            type: 'all',
-//                            text: 'All'
-//                        }]
-//                    },
-//                    xAxis: {
-//                        type: 'datetime',
-//                        ordinal: false // This makes sure that periods without data are not displayed
-//                    },
-//                    yAxis: [{
-//                        labels: {
-//                            align: 'right',
-//                            x: -3
-//                        },
-//                        title: {
-//                            text: 'OHLC'
-//                        },
-//                        height: '60%',
-//                        lineWidth: 2,
-//                        resize: {
-//                            enabled: true
-//                        }
-//                    }, {
-//                        labels: {
-//                            align: 'right',
-//                            x: -3
-//                        },
-//                        title: {
-//                            text: 'Volume'
-//                        },
-//                        top: '65%',
-//                        height: '35%',
-//                        offset: 0,
-//                        lineWidth: 2
-//                    }],
-//                    tooltip: {
-//                        split: true
-//                    },
-//                    series: [{
-//                        type: 'candlestick',
-//                        name: '\(title)',
-//                        data: [\(ohlcDataString)],
-//                        zIndex: 2
-//                    }, {
-//                        type: 'column',
-//                        name: 'Volume',
-//                        data: [\(volumeDataString)],
-//                        yAxis: 1
-//                    }]
-//                });
-//            </script>
-//        </body>
-//        </html>
-//        """
-//        return htmlContent
-//    }
-//
-//}
-
-#Preview {
-    RecomChartView()
-        .environmentObject(WebService.service)
-}

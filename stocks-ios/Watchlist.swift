@@ -38,8 +38,8 @@ class Watchlist: ObservableObject {
     
     @Published var stocks: [StockItem] = []
     
-    private let mongobaseUrl = URL(string: "http://localhost:3001/api/")!
-    private let BaseUrl = URL(string: "http://localhost:8080/")!
+    private let mongobaseUrl = URL(string: "https://parag2804backend.wl.r.appspot.com/api/")!
+    private let BaseUrl = URL(string: "https://parag2804backend.wl.r.appspot.com/")!
 
     func fetchWatchlist(completion: @escaping () -> Void = {}) {
         let watchlistUrl = mongobaseUrl.appendingPathComponent("watchlist")
@@ -273,7 +273,7 @@ struct favView: View {
             }
             .onMove { (source: IndexSet, destination: Int) in
                 viewModel.stocks.move(fromOffsets: source, toOffset: destination)
-                // If you want to maintain the order on the server as well,
+          
                 // send update to the server here.
             }
         
@@ -293,66 +293,6 @@ struct favView: View {
 }
 
 
-//
-//
-//struct favView: View {
-//    @EnvironmentObject var viewModel: Watchlist
-//    var ticker: String
-//    var body: some View {
-//        ForEach(viewModel.stocks) { stock in
-//            NavigationLink(destination: StockInfoView(ticker: stock.symbol)) {
-//                HStack {
-//                    VStack(alignment: .leading) {
-//                        Text(stock.symbol)
-//                            .font(.headline)
-//                        Text(stock.company)
-//                            .font(.subheadline)
-//                            .foregroundColor(.secondary)
-//                    }
-//                    Spacer()
-//                    VStack(alignment: .trailing) {
-//                        Text(String(format: "$%.2f", stock.price ?? 0))
-//                            .font(.headline)
-//                        HStack(spacing: 4) {
-//                            Image(systemName: (stock.change ?? 0) < 0 ? "arrow.down.right" : "arrow.up.right")
-//                                .foregroundColor((stock.change ?? 0) < 0 ? .red : .green)
-//                            Text(String(format: "%.2f (%.2f%%)", stock.change ?? 0, stock.changePercentage ?? 0))
-//                                .foregroundColor((stock.change ?? 0) < 0 ? .red : .green)
-//                        }
-//                        .font(.subheadline)
-//                    }
-//                }
-//            }
-////            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-////                Button(role: .destructive) {
-////                    if let index = viewModel.stocks.firstIndex(where: { $0.id == stock.id }) {
-////                        viewModel.stocks.remove(at: index)
-////                        
-////                    }
-////                } label: {
-////                    Label("Delete", systemImage: "trash")
-////                }
-////            }
-////            .swipeActions(edge: .leading, allowsFullSwipe: true) {
-////                Button {
-////                    // Here you would normally handle some action.
-////                    // For reordering, SwiftUI provides the Edit mode with onMove.
-////                } label: {
-////                    Label("Change", systemImage: "pencil")
-////                }
-////            }
-//            
-//            
-//            
-//            
-//            
-//        }
-//        
-////        .onAppear {
-////                    viewModel.fetchWatchlist()
-////                }
-//    }
-//}
 
 
 

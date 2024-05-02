@@ -85,12 +85,9 @@ struct LatestStockPrice: Codable {
 class PortfolioViewModel: ObservableObject {
     @Published var portfolioData: PortfolioData?
     
-    private let portfolioURL = URL(string: "http://localhost:3001/api/portfolio")!
+    private let portfolioURL = URL(string: "https://parag2804backend.wl.r.appspot.com/api/portfolio")!
     
-    // Initialize ViewModel and fetch portfolio
-    //    init() {
-    //        fetchPortfolio()
-    //    }
+
     
     // Fetch portfolio from the backend API
     func fetchPortfolio(completion: @escaping () -> Void = {}) {
@@ -136,7 +133,7 @@ class PortfolioViewModel: ObservableObject {
     
     // Function to fetch the latest stock price from your API
     func getStockPrice(for symbol: String, completion: @escaping (Result<LatestStockPrice, Error>) -> Void) {
-        let stockPriceURL = URL(string: "http://localhost:8080/stockPrice/\(symbol)")!
+        let stockPriceURL = URL(string: "https://parag2804backend.wl.r.appspot.com/stockPrice/\(symbol)")!
         // Replace with actual network call to your stock price API
         URLSession.shared.dataTask(with: stockPriceURL) { data, response, error in
             if let data = data, error == nil {
@@ -155,7 +152,7 @@ class PortfolioViewModel: ObservableObject {
     
     
     func buyStock(symbol: String, name: String, quantity: Int, buyPrice: Double, stockPresent: Bool, balance: Double) {
-        guard let url = URL(string: "http://localhost:3001/api/portfolio/buyStock") else {
+        guard let url = URL(string: "https://parag2804backend.wl.r.appspot.com/api/portfolio/buyStock") else {
             print("Invalid URL")
             return
         }
@@ -208,7 +205,7 @@ class PortfolioViewModel: ObservableObject {
 
 
     func sellStock(symbol: String, quantity: Int, newPrice: Double, balance: Double) {
-    guard let url = URL(string: "http://localhost:3001/api/portfolio/updateStock") else {
+    guard let url = URL(string: "https://parag2804backend.wl.r.appspot.com/api/portfolio/updateStock") else {
         print("Invalid URL")
         return
     }
@@ -297,7 +294,7 @@ struct PortfolioView: View {
             
             
         }
-        // Now, instead of using a ForEach to create the list of stocks, the rows will be created in the parent List.
+  
     }
 }
 
@@ -314,6 +311,8 @@ struct PortfolioRowView: View {
                         .fontWeight(.bold)
                     Text("\(stock.quantity) shares")
                         .font(.subheadline)
+                        .foregroundColor(Color.gray)
+                        
                 }
                 
                 Spacer()
@@ -333,7 +332,7 @@ struct PortfolioRowView: View {
                 }
             }
         }
-        // Here, we don't add padding or a background because the parent List will style the rows.
+
     }
 }
 

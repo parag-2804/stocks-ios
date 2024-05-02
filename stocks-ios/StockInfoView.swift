@@ -21,119 +21,111 @@ struct StockInfoView: View {
     @State private var toastMessage: String = ""
     
     @State var isAddedtoFav = false
-       
+    @State private var isLoading: Bool = true
     enum ChartType {
            case hourly, historical
        }
     
     var body: some View {
         NavigationStack {
-            
-            ScrollView{
+            if isLoading {
+                ProgressView("Fetching Data...")
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                            isLoading = false
+                        }
+                    }
+            } else {
                 
-                VStack(alignment: .leading, spacing: 25.0){
+                ScrollView{
                     
-                    stockheadView()
+                    VStack(alignment: .leading, spacing: 25.0){
                         
-                    
-//                    
-//                    if selectedChart == .hourly
-//                    {
-//                        Text("Hourly Chart")
-//                        HourlyChartView()
-//                            .frame(height: 400)
-//                            
-//                    } else {
-//                        Text("Historical Chart")
-//                        HistoricalChartView()
-//                            .frame(height: 400)
-//                           
-//                    }
-//                    
+                        stockheadView()
+                        
 
-                    
-//                    ChartSwitcherView(selectedChart: $selectedChart)
-                    TabView {
-                                                        HourlyChartView()
-                                                            .tabItem {
-                                                                Image(systemName: "chart.xyaxis.line")
-                                                                Text("Hourly")
-                                                            }
-                                                        
-                                                        HistoricalChartView()
-                                                            .tabItem {
-                                                                Image(systemName: "clock")
-                                                                Text("Historical")
-                                                            }
-                                                    }
-                                                    .frame(height: 500)
-                    
-                    
-                    PortfView(ticker: ticker)
-                      
-                    
-                    StockStatsView()
-                      
-                    
-                    CompanyInfoView(ticker: ticker)
-                     
-                    
-                    InsiderSentimentsView()
-                     
-                    
-                    RecomChartView()
-                        .frame(height: 400)
+                        TabView {
+                            HourlyChartView()
+                                .tabItem {
+                                    Image(systemName: "chart.xyaxis.line")
+                                    Text("Hourly")
+                                }
+                            
+                            HistoricalChartView()
+                                .tabItem {
+                                    Image(systemName: "clock")
+                                    Text("Historical")
+                                }
+                        }
+                        .frame(height: 500)
                         
+                        
+                        PortfView(ticker: ticker)
+                        
+                        
+                        StockStatsView()
+                        
+                        
+                        CompanyInfoView(ticker: ticker)
+                        
+                        
+                        InsiderSentimentsView()
+                        
+                        
+                        RecomChartView()
+                            .frame(height: 400)
+                        
+                        
+                        EPSChartView()
+                            .frame(height: 400)
+                        
+                        
+                        NewsView()
+                        
+                        
+                        
+                        
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     
-                    EPSChartView()
-                        .frame(height: 400)
-                      
-                   
-                    NewsView()
-                       
                     
                     
                     
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-               
+                .padding(.horizontal, 15.0)
                 
                 
-            }
-            .padding(.horizontal, 15.0)
-            
-            
-            .navigationBarTitle(ticker)
-            .toolbar {
-                // Plus button which might perform some action
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        if isAddedtoFav {
-                                        // If the stock is already added, delete it from the watchlist
-                                        viewModel.deleteStockFromWatchlist(symbol: ticker)
-                                    } else {
-                                        viewModel.addStockToWatchlist(symbol: ticker, companyName: webService.descData.name)
-                                        
-                                        toastMessage = "Adding \(ticker) to Favourites"
-                                        showToast = true
-                                    }
-                                    isAddedtoFav.toggle()
-                        
-                        
-                    }) {
-                        Image(systemName: isAddedtoFav ? "plus.circle.fill":  "plus.circle")
-                            .foregroundColor(.blue) // Style according to your needs
+                .navigationBarTitle(ticker)
+                .toolbar {
+                    // Plus button which might perform some action
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button(action: {
+                            if isAddedtoFav {
+                                // If the stock is already added, delete it from the watchlist
+                                viewModel.deleteStockFromWatchlist(symbol: ticker)
+                            } else {
+                                viewModel.addStockToWatchlist(symbol: ticker, companyName: webService.descData.name)
+                                
+                                toastMessage = "Adding \(ticker) to Favourites"
+                                showToast = true
+                            }
+                            isAddedtoFav.toggle()
+                            
+                            
+                        }) {
+                            Image(systemName: isAddedtoFav ? "plus.circle.fill":  "plus.circle")
+                                .foregroundColor(.blue) // Style according to your needs
+                        }
                     }
                 }
+                .onAppear {
+                    portfolioViewModel.fetchPortfolio()
+                    /*webService.fetchAPI(ticker: ticker)
+                     */  // Fetching data when the view appears
+                    isAddedtoFav = viewModel.stocks.contains { $0.symbol == ticker }
+                    webService.fetchAPI(ticker: ticker)
+                }
             }
-            .onAppear {
-                portfolioViewModel.fetchPortfolio()
-                        /*webService.fetchAPI(ticker: ticker)
-                         */  // Fetching data when the view appears
-                isAddedtoFav = viewModel.stocks.contains { $0.symbol == ticker }
-                webService.fetchAPI(ticker: ticker)
-                    }
         }
         .toast(message: toastMessage ,isShowing: $showToast)
       
@@ -160,15 +152,16 @@ struct stockheadView: View{
                 let imageUrl = URL(string: webService.descData.logo)
                     KFImage(imageUrl)
                         .resizable()
+                
                         .scaledToFill()
-                        .frame(width: 70, height: 70)
+                        .frame(width: 50, height: 50)
 //                        .clipped()
-//                        .cornerRadius(8)
+                        .cornerRadius(12)
             }
             
             
             
-            HStack(){
+            HStack(spacing: 15){
                 
                 Text(Utility.formatCurrency(webService.stockData.currentPrice))
                     .font(.title)
@@ -193,61 +186,6 @@ struct stockheadView: View{
     }
 
 
-//struct ChartSwitcherView: View {
-//    @Binding var selectedChart: StockInfoView.ChartType
-//
-//    var body: some View {
-//        HStack {
-//            Button(action: {
-//                self.selectedChart = .hourly
-//            }) {
-//                ChartLabel(title: "Hourly", icon: "chart.xyaxis.line", isSelected: selectedChart == .hourly)
-//            }
-//            .buttonStyle(PlainButtonStyle())
-//            
-//            Spacer().frame(width: 100)
-//            
-//            Button(action: {
-//                self.selectedChart = .historical
-//            }) {
-//                ChartLabel(title: "Historical", icon: "clock", isSelected: selectedChart == .historical)
-//            }
-//            .buttonStyle(PlainButtonStyle())
-//        }
-//        .padding(.leading, 85.0)
-//    }
-//}
-//
-//// Custom label for the chart switcher buttons
-//struct ChartLabel: View {
-//    var title: String
-//    var icon: String
-//    var isSelected: Bool
-//
-//    var body: some View {
-//        Label {
-//            Text(title)
-//                .foregroundColor(isSelected ? .blue : .gray)
-//        } icon: {
-//            Image(systemName: icon)
-//                .foregroundColor(isSelected ? .blue : .gray)
-//        }
-//        .labelStyle(VerticalLabelStyle())
-//    }
-//}
-
-//var HourlyChart: some View {
-//    
-//    // Replace with your actual chart view
-//    Text("Hourly Chart Placeholder")
-//    HourlyChartView()
-//}
-//
-//var HistoricalChart: some View {
-//    
-//    // Replace with your actual chart view
-//    Text("Historical Chart Placeholder")
-//}
 
 
 
@@ -307,38 +245,48 @@ struct PortfView: View {
                 //                .padding()
                 
                 if stockOwned {
-                    VStack {
+                    VStack(spacing: 10) {
                         HStack {
                             Text("Shares Owned:")
+                                .font(.caption)
                                 .fontWeight(.semibold)
                             Spacer()
                             Text("\(sharesOwned)")
+                                .font(.caption)
                         }
                         HStack {
                             Text("Avg. Cost / Share:")
+                                .font(.caption)
                                 .fontWeight(.semibold)
                             Spacer()
                             Text("$\(avgCostPerShare, specifier: "%.2f")")
+                                .font(.caption)
                         }
                         HStack {
                             Text("Total Cost:")
+                                .font(.caption)
                                 .fontWeight(.semibold)
                             Spacer()
                             Text("$\(totalCost, specifier: "%.2f")")
+                                .font(.caption)
                         }
                         HStack {
                             Text("Change:")
+                                .font(.caption)
                                 .fontWeight(.semibold)
                             Spacer()
                             // Assuming you calculate the change elsewhere and set it
                             Text("$\(marketValue - totalCost, specifier: "%.2f")")
+                                .font(.caption)
                                 .foregroundColor(marketValue - totalCost < 0 ? .red : marketValue - totalCost > 0 ? .green : .gray)
                         }
                         HStack {
                             Text("Market Value:")
+                                .font(.caption)
                                 .fontWeight(.semibold)
                             Spacer()
                             Text("$\(marketValue, specifier: "%.2f")")
+                                .font(.caption)
                                 .foregroundColor(marketValue - totalCost < 0 ? .red : marketValue - totalCost > 0 ? .green : .gray)
                         }
                     }
@@ -346,7 +294,9 @@ struct PortfView: View {
                 } else {
                     VStack(alignment: .leading){
                         Text("You have 0 shares of \(ticker)")
+                            .font(.caption)
                         Text("Start trading!")
+                            .font(.caption)
                             
                     }
                    
@@ -414,41 +364,7 @@ extension View {
 
 
 
-//struct SuccessView: View {
-//    let tradeType: TradeType
-//    let numberOfShares: Int
-//    let stockSymbol: String
-//    var body: some View {
-//        VStack {
-//            Text("Congratulations!")
-//                .font(.largeTitle)
-//                .fontWeight(.bold)
-//                .padding()
-//
-//            Text("You have successfully \(tradeType == .buy ? "bought" : "sold") \(numberOfShares) \(numberOfShares == 1 ? "share" : "shares") of \(stockSymbol).")
-//                .font(.title3)
-//                .padding()
-//
-//            Button("Done") {
-//                
-//                // Handle the dismissal action here
-//            }
-//            .padding()
-//            .frame(maxWidth: .infinity)
-//            .background(Color.white)
-//            .foregroundColor(Color.green)
-//            .cornerRadius(20)
-//        }
-//        .frame(width: 300, height: 200)
-//        .background(Color.green)
-//        .cornerRadius(20)
-//        .foregroundColor(.white)
-//    }
-//    
-//    enum TradeType {
-//        case buy, sell
-//    }
-//}
+
 
 struct SuccessView: View {
     let tradeType: String
@@ -614,8 +530,7 @@ struct TradeSheetView: View {
         
 }
     
-//    var availableFunds: Double = 22260.53 // Example funds available
-    /*var sharePrice: Double = 171.09*/ // Example price per share
+
     
     var body: some View {
         
@@ -735,36 +650,44 @@ struct StockStatsView: View {
                 .font(.title2)
                 .padding(.bottom, 2)
             
-            HStack {
+            HStack(spacing: 40) {
                 VStack(alignment: .leading) {
                     HStack{
                         Text("High Price: ")
+                            .font(.caption)
                             .fontWeight(.semibold)
                         Text("$\(webService.stockData.high, specifier: "%.2f")")
+                            .font(.caption)
                     }
 //                      .fontWeight(.semibold)
                     
                     HStack{
                         Text("Low Price: ")
+                            .font(.caption)
                             .fontWeight(.semibold)
                         Text("$\(webService.stockData.low, specifier: "%.2f")")
+                            .font(.caption)
                     }
                 }
                 
-                Spacer()
+//                Spacer()
                 
                 VStack(alignment: .leading) {
                     
                     HStack{
                         
                         Text("Open Price: ")
+                            .font(.caption)
                             .fontWeight(.semibold)
                         Text("$\(webService.stockData.open, specifier: "%.2f")")
+                            .font(.caption)
                     }
                     HStack{
                         Text("Prev. Close: ")
+                            .font(.caption)
                             .fontWeight(.semibold)
                         Text("$\(webService.stockData.previousClose, specifier: "%.2f")")
+                            .font(.caption)
                     }
                 }
             }
@@ -795,26 +718,30 @@ struct CompanyInfoView: View {
                 .font(.title2)
                 .padding(.bottom, 2)
             
-            HStack{
+            HStack(spacing: 60){
                 
             
                 VStack(alignment: .leading, spacing: 10){
                     
                     
 
-                        Text("IPO Start Date:")
+                    Text("IPO Start Date:")
+                        .font(.caption)
                             .fontWeight(.semibold)
 
 
-                        Text("Industry:")
+                    Text("Industry:")
+                        .font(.caption)
                             .fontWeight(.semibold)
 
                     
 
-                        Text("Webpage:")
+                    Text("Webpage:")
+                        .font(.caption)
                             .fontWeight(.semibold)
 
-                        Text("Company Peers:")
+                    Text("Company Peers:")
+                        .font(.caption)
                             .fontWeight(.semibold)
 
                 }
@@ -823,18 +750,22 @@ struct CompanyInfoView: View {
                     
                     
                     Text(webService.descData.ipo)
+                        .font(.caption)
                     
                     
                     Text(webService.descData.finnhubIndustry)
+                        .font(.caption)
                     
                     
                     
                     let urlString = webService.descData.weburl
                     if let url = URL(string: urlString) {
                         Link(webService.descData.weburl, destination: url)
+                            .font(.caption)
                     } else {
                         // Handle case where URL is not valid or missing
                         Text("Loading")
+                            .font(.caption)
                     }
                     
                     
@@ -843,6 +774,8 @@ struct CompanyInfoView: View {
                         HStack(spacing: 10) {
                             ForEach(webService.peers, id: \.self) { peer in
                                 Text(peer)
+                                    .font(.caption)
+                                
                                     .foregroundColor(.blue) // Set the text color to blue for a link-like appearance
                                     .onTapGesture {
                                         ticker = peer // Update the shared ticker
@@ -890,8 +823,15 @@ struct InsiderSentimentsView: View {
     var body: some View {
         VStack(alignment: .leading) {
             
+            Text("Insights")
+                .font(.title2)
+            
             Text("Insider Sentiments")
                 .font(.title2)
+                .padding(.leading, 102.0)
+                .padding(.top, 10.0)
+//                .multilineTextAlignment(.center)
+            
                 
                 
             
@@ -946,28 +886,20 @@ struct SentimentRow: View {
 }
 
 
-
-
-
-
-
-
-
-
-
-//#Preview{
-//    TradeSheetView(isPresented : true, ticker: "AAPL")
-//        .environmentObject(WebService.service)
+//struct StockInfoViewView_Previews: PreviewProvider {
+//    static var previews: some View {
 //        
+//        StockInfoView(ticker: "AAPL")
+//            .environmentObject(WebService.service)
+//            .environmentObject(Watchlist())
+//            .environmentObject(PortfolioViewModel())
+//        
+//    }
 //}
 
-//
-//#Preview {
-//    StockInfoView(ticker: "AAPL")
-//        .environmentObject(WebService.service)
-//        .environmentObject(Watchlist())
-//        .environmentObject(PortfolioViewModel())
-//    
-//}
-//
-//}
+
+
+
+
+
+

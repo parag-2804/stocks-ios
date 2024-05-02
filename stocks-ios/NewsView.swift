@@ -10,38 +10,7 @@
 import SwiftUI
 import Kingfisher
 
-//struct NewsView: View {
-//    @EnvironmentObject var webService: WebService
-//    @State private var selectedArticle: NewsItem?
-//    
-//    var body: some View {
-//        ZStack{
-//            Text("News")
-//                .font(.title2)
-//            
-//            
-//            List {
-//                Section(header: Text("News").font(.title2)) {
-//                    ForEach(webService.filteredNewsItems) { item in
-//                        NewsArticleRow(article: item)
-//                            .onTapGesture {
-//                                self.selectedArticle = item
-//                            }
-//                            .listRowBackground(Color.clear)
-//                    }
-//                }
-//            }
-//            .onAppear {
-//                print("NewsView appeared with \(webService.filteredNewsItems.count) items.")
-//            }
-//            .sheet(item: $selectedArticle) { article in
-//                NewsDetailsView(article: article)
-//            }
-//        
-//            //.background(Color.clear)
-//        }
-//    }
-//}
+
 
 struct NewsView: View {
     @EnvironmentObject var webService: WebService
@@ -89,11 +58,11 @@ struct NewsArticleRow: View {
         if(article.id == webService.filteredNewsItems.first?.id){
             
             
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing:10) {
                 let imageUrl = URL(string: article.image)
                     KFImage(imageUrl)
                         .resizable()
-                        .scaledToFill()
+//                        .scaledToFill()
                         .frame(height: 200)
                         .clipped()
                         .cornerRadius(8)
@@ -316,25 +285,4 @@ struct NewsView_Previews: PreviewProvider {
     }
 }
 
-//struct NewsView_Previews: PreviewProvider {
-//    static var previews: some View {
-//        // Create an instance of WebService with mock data
-//        let mockWebService = WebService()
-//        mockWebService.filteredNewsItems = (1...10).map { i in
-//            NewsItem(
-//                id: i,
-//                category: "Technology",
-//                datetime: Date().timeIntervalSince1970 - Double(i * 60 * 60),
-//                headline: "Article \(i)",
-//                image: "https://placekitten.com/200/200", // Placeholder image URL
-//                related: "AAPL",
-//                source: "Mock Source",
-//                summary: "Summary for article \(i)",
-//                url: "https://example.com/article\(i)"
-//            )
-//        }
-//        
-//        return NewsView()
-//            .environmentObject(mockWebService) // Provide the mock WebService
-//    }
-//}
+
